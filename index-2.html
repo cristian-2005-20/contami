@@ -1,0 +1,3030 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1720">
+<meta name="description" content="Gestione delle finanze personali. I dati restano sul tuo dispositivo.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Libro Mastro">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icone/apple-touch-icon.png">
+<title>Libro Mastro — Gestione finanze</title>
+<style>
+/* ─────────────────────────────────────────────
+   Token system
+   ───────────────────────────────────────────── */
+:root{
+  --ink:#0f1720;
+  --panel:#16212e;
+  --panel-2:#1c2937;
+  --line:#27374b;
+  --line-soft:#1f2c3c;
+  --text:#e7edf4;
+  --muted:#8ba0b8;
+  --muted-2:#5f7186;
+  --brass:#c9a227;
+  --brass-dim:#8a6f1b;
+  --in:#4fb286;
+  --out:#d9695f;
+  --b-fondo:#4fb286;
+  --b-casa:#c9a227;
+  --b-trading:#7aa7d9;
+  --b-invest:#9b8ec4;
+  --b-extra:#d9695f;
+  --b-auto:#7fa8a0;
+  --b-none:#4a5b70;
+  --radius:4px;
+  --display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);
+  color:var(--text);
+  font-family:var(--body);
+  font-size:14px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:0;font-weight:600}
+
+/* ── Layout ─────────────────────────────── */
+.app{display:flex;min-height:100vh;align-items:flex-start}
+.rail{
+  width:186px;flex:0 0 186px;
+  background:var(--panel);
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;
+  padding:22px 0;
+  position:sticky;top:0;
+  height:100vh;overflow-y:auto;
+  z-index:20;
+}
+.brand{padding:0 20px 24px;border-bottom:1px solid var(--line-soft);margin-bottom:14px}
+.brand .mark{
+  font-family:var(--display);font-size:20px;letter-spacing:.02em;
+  display:block;line-height:1.15;
+}
+.brand .sub{
+  display:block;margin-top:5px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--brass);
+}
+.nav{display:flex;flex-direction:column;gap:2px;padding:0 10px}
+.nav button{
+  display:flex;align-items:baseline;gap:9px;
+  background:none;border:0;text-align:left;
+  padding:9px 10px;border-radius:var(--radius);
+  color:var(--muted);cursor:pointer;width:100%;
+}
+.nav button .idx{font-family:var(--mono);font-size:10px;color:var(--muted);opacity:.6}
+.nav button:hover{background:var(--panel-2);color:var(--text)}
+.nav button.on{background:var(--panel-2);color:var(--text);box-shadow:inset 2px 0 0 var(--brass)}
+.nav button.on .idx{color:var(--brass);opacity:1}
+.rail-foot{margin-top:auto;padding:16px 20px 0;border-top:1px solid var(--line-soft)}
+.rail-foot .stamp{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6}
+
+main{flex:1;min-width:0;display:flex;flex-direction:column}
+main > *{flex:0 0 auto}
+.topbar{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:14px 26px;border-bottom:1px solid var(--line);
+  background:linear-gradient(var(--panel),var(--ink));
+}
+.topbar .title{font-family:var(--display);font-size:19px;margin-right:auto}
+.view{padding:22px 26px 60px;display:none;flex:0 0 auto;min-height:0}
+.view.on{display:block}
+
+/* ── Controls ───────────────────────────── */
+.btn{
+  background:var(--panel-2);border:1px solid var(--line);
+  padding:7px 13px;border-radius:var(--radius);cursor:pointer;
+  color:var(--text);transition:border-color .12s,background .12s;
+}
+.btn:hover{border-color:var(--brass-dim);background:#22313f}
+.btn.primary{background:var(--brass);border-color:var(--brass);color:#1a1405;font-weight:600}
+.btn.primary:hover{background:#d8b02f}
+.btn.ghost{background:none}
+.btn.danger:hover{border-color:var(--out);color:var(--out)}
+.btn.sm{padding:4px 9px;font-size:12.5px}
+input[type=text],input[type=number],input[type=date],input[type=search],select,textarea{
+  background:var(--ink);border:1px solid var(--line);
+  border-radius:var(--radius);padding:7px 9px;width:100%;
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--brass-dim);outline-offset:-1px}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+label.f{display:block}
+label.f > span{
+  display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:5px;
+}
+
+/* ── Month strip ────────────────────────── */
+.months{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:18px}
+.months button{
+  flex:1 1 0;min-width:56px;
+  background:var(--panel);border:1px solid var(--line-soft);
+  border-radius:var(--radius);padding:9px 4px;cursor:pointer;
+  color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+}
+.months button .m-net{display:block;font-size:10px;margin-top:3px;opacity:.85}
+.months button:hover{border-color:var(--line);color:var(--text)}
+.months button.on{background:var(--panel-2);border-color:var(--brass-dim);color:var(--text)}
+
+/* ── Cards & grids ──────────────────────── */
+.card{
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--radius);padding:18px;
+}
+.card + .card{margin-top:16px}
+.card > h2{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:14px;
+}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+.stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:22px;margin-top:6px;letter-spacing:-.01em}
+.stat .d{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px}
+.pos{color:var(--in)} .neg{color:var(--out)} .dim{color:var(--muted)}
+
+/* ── Tables ─────────────────────────────── */
+.tw{overflow-x:auto;overflow-y:visible;border:1px solid var(--line);border-radius:var(--radius)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);font-weight:500;text-align:left;
+  padding:10px 12px;background:var(--panel-2);border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+td{padding:9px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:#1a2634}
+td.num,th.num{text-align:right;font-family:var(--mono);white-space:nowrap}
+tfoot td{
+  border-top:1px solid var(--line);background:var(--panel-2);
+  font-family:var(--mono);font-weight:600;
+}
+.tag{
+  display:inline-block;font-size:11px;padding:2px 7px;border-radius:2px;
+  border:1px solid var(--line);color:var(--muted);white-space:nowrap;
+}
+/* scala dal più necessario (verde) al più rinunciabile (rosso) */
+.tag.n0{border-color:#3a6b57;color:#7fc7a5}
+.tag.n1{border-color:#5a6b3a;color:#a8c77f}
+.tag.n2{border-color:#6b5c2a;color:#cdb45e}
+.tag.n3{border-color:#6b4a35;color:#dda275}
+.tag.n4{border-color:#6b3f3a;color:#e08d84}
+.dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px;vertical-align:1px}
+.empty{padding:38px 20px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--text);font-family:var(--display);font-size:17px;margin-bottom:6px;font-weight:400}
+
+/* ── Signature: allocation ribbon ───────── */
+.ribbon{margin:4px 0 20px}
+.ribbon-bar{
+  display:flex;height:34px;width:100%;border-radius:3px;overflow:hidden;
+  border:1px solid var(--line);background:var(--panel-2);
+}
+.ribbon-seg{
+  position:relative;min-width:3px;overflow:hidden;
+  background:color-mix(in srgb, var(--c) 18%, var(--panel-2));
+  border-right:1px solid var(--ink);
+  transition:flex-grow .35s ease;
+}
+.ribbon-seg:last-child{border-right:0}
+.ribbon-fill{
+  position:absolute;left:0;top:0;bottom:0;
+  background:var(--c);transition:width .45s ease;
+}
+.ribbon-seg .pct{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10.5px;color:#0f1720;font-weight:700;
+}
+.ribbon-seg .pct.out{color:var(--text)}
+.ribbon-scale{position:relative;min-height:16px;margin-top:6px}
+.ribbon-caption{
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--muted);
+}
+.ribbon-caption span:first-child{color:var(--brass)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px}
+.legend .li{font-size:12px}
+.legend .li b{font-family:var(--mono);font-weight:600}
+.legend .li em{font-style:normal;color:var(--muted);font-family:var(--mono);font-size:11px}
+
+/* ── Chart ──────────────────────────────── */
+.chart{width:100%;height:210px;display:block}
+.chart .gl{stroke:var(--line-soft);stroke-width:1}
+.chart .lbl{font-family:var(--mono);font-size:9px;fill:var(--muted)}
+.spark{width:100%;height:44px;display:block}
+
+/* ── Modal ──────────────────────────────── */
+.mask{
+  position:fixed;inset:0;background:rgba(6,10,15,.72);
+  display:none;align-items:flex-start;justify-content:center;
+  padding:40px 16px;overflow:auto;z-index:40;
+}
+.mask.on{display:flex}
+.modal{
+  background:var(--panel);border:1px solid var(--line);border-radius:6px;
+  width:100%;max-width:640px;padding:22px;
+}
+.modal h3{font-family:var(--display);font-size:19px;margin-bottom:16px;font-weight:400}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.form-grid .full{grid-column:1 / -1}
+.modal-foot{display:flex;gap:9px;justify-content:flex-end;margin-top:20px}
+.seg{display:flex;gap:0;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.seg button{flex:1;background:var(--ink);border:0;padding:8px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--panel-2);color:var(--text);box-shadow:inset 0 -2px 0 var(--brass)}
+
+/* ── Selettore € / % ────────────────────── */
+.seg.mini{flex:0 0 auto;border-radius:var(--radius)}
+.seg.mini button{padding:6px 11px;font-size:12.5px;flex:0 0 auto;min-width:34px}
+.valore-campo{display:flex;gap:6px;align-items:center}
+.valore-campo input{width:104px}
+
+/* ── Schede regola ──────────────────────── */
+.regola{
+  border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel-2);margin-bottom:12px;
+}
+.regola.sospesa{opacity:.55}
+.regola-head{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:11px 14px;border-bottom:1px solid var(--line-soft);
+}
+.regola-head .ord{display:flex;gap:3px}
+.regola-head .ord button{padding:3px 8px;line-height:1.2}
+.regola-nome{display:flex;align-items:center;gap:2px;font-size:14px}
+.regola-nome .tag{margin-left:9px}
+.regola-head .tipo{margin-left:auto}
+.regola-head .row-tools{flex:0 0 auto}
+.regola-corpo{padding:14px}
+.regola-corpo .hint{margin-bottom:0}
+.riga-valore{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.riga-valore .etichetta{
+  font-family:var(--mono);font-size:10px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--muted);
+}
+.soglia{display:flex;align-items:center;gap:7px}
+.soglia .dim{font-size:12.5px;white-space:nowrap}
+.regola-corpo table{background:var(--ink)}
+.regola-corpo th{background:var(--panel)}
+
+/* ── Barre ──────────────────────────────── */
+.mini-bar{
+  display:inline-block;width:52px;height:6px;background:var(--line);
+  border-radius:1px;margin-right:8px;vertical-align:1px;overflow:hidden;
+}
+.quadratura{
+  margin:14px 0 0;padding:9px 13px;border-radius:var(--radius);
+  font-size:12.5px;border:1px solid var(--line-soft);
+}
+
+/* ── Stati dei fondi ─────────────────────── */
+tr.fondo-completato td{
+  background:linear-gradient(90deg, rgba(79,178,134,.14), rgba(79,178,134,.05));
+  box-shadow:inset 3px 0 0 var(--in);
+}
+tr.fondo-completato:hover td{background:rgba(79,178,134,.2)}
+tr.fondo-concluso td{
+  opacity:.45;background:var(--panel-2);
+  border-top:1px solid var(--line);
+}
+tr.fondo-concluso:hover td{opacity:.75;background:var(--panel-2)}
+tr.fondo-concluso + tr.fondo-concluso td{border-top:0}
+.tag.done{border-color:#3a6b57;color:#7fc7a5;background:rgba(79,178,134,.12);margin-left:9px}
+tr.fondo-concluso .tag{margin-left:9px}
+.btn.ok{border-color:#3a6b57;color:#7fc7a5}
+.btn.ok:hover{border-color:var(--in);background:rgba(79,178,134,.14)}
+
+/* ── Anni compressi negli investimenti ───── */
+tr.anno-ridotto td{background:var(--panel-2);opacity:.72;font-size:12.5px}
+tr.anno-ridotto:hover td{opacity:1}
+.link-anno{
+  background:none;border:0;color:var(--text);cursor:pointer;padding:0;
+  font-family:var(--mono);font-size:13px;letter-spacing:.04em;
+  display:flex;align-items:center;gap:6px;
+}
+.link-anno:hover{color:var(--brass)}
+.link-anno .freccia{color:var(--brass);font-size:10px}
+.asterisco{color:var(--brass);margin-left:2px;font-size:11px;vertical-align:top}
+.originale{
+  color:var(--muted);font-style:italic;font-size:12.5px;
+  display:inline-block;max-width:100%;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;
+}
+.da-compilare{
+  color:var(--brass-dim);font-size:12px;font-style:italic;
+}
+td.da-compilare{border-left:2px solid var(--brass-dim)}
+
+/* ── Filtri sulle intestazioni ───────────── */
+th.filtrabile{cursor:pointer;position:relative;user-select:none;padding-right:22px}
+th.filtrabile::after{
+  content:"";position:absolute;right:9px;top:50%;margin-top:-2px;
+  border-left:3.5px solid transparent;border-right:3.5px solid transparent;
+  border-top:4px solid var(--muted);opacity:.55;
+}
+th.filtrabile:hover{color:var(--text)}
+th.filtrabile:hover::after{opacity:1}
+th.filtrabile.attivo{color:var(--brass)}
+th.filtrabile.attivo::after{border-top-color:var(--brass);opacity:1}
+th.filtrabile.aperto{background:var(--ink);color:var(--text)}
+th.filtrabile.num{padding-right:22px}
+
+.col-pop{
+  position:absolute;top:100%;left:0;z-index:30;min-width:210px;max-width:280px;
+  background:var(--panel);border:1px solid var(--brass-dim);border-radius:var(--radius);
+  box-shadow:0 10px 26px rgba(0,0,0,.45);
+  text-transform:none;letter-spacing:0;font-weight:400;color:var(--text);
+  font-family:var(--body);font-size:13px;
+}
+th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
+.pop-tit{
+  padding:9px 12px;border-bottom:1px solid var(--line-soft);
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);
+}
+.pop-corpo{padding:10px 12px;max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.pop-riga{display:flex;gap:8px}
+.pop-sep{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);margin-top:2px;
+}
+.pop-voce{display:flex;align-items:center;gap:8px;cursor:pointer;line-height:1.3}
+.pop-voce input{width:auto;margin:0;flex:0 0 auto;accent-color:var(--brass)}
+.pop-voce span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pop-voce:hover{color:var(--brass)}
+.pop-vuoto{color:var(--muted);font-size:12.5px}
+.pop-piede{
+  display:flex;gap:7px;justify-content:space-between;
+  padding:9px 12px;border-top:1px solid var(--line-soft);
+}
+.quadratura.ok{color:var(--muted);background:var(--panel-2)}
+.quadratura.ko{color:#e8d49a;background:#2a1f10;border-color:var(--brass-dim)}
+.quadratura span.ok{color:var(--in);font-weight:700;margin-right:6px}
+.quadratura span.ko{color:var(--out);font-weight:700;margin-right:6px}
+.mini-bar > span{display:block;height:100%}
+.diverg{position:relative;display:block;height:12px;width:100%;min-width:96px}
+.diverg .asse{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)}
+.diverg .barra{position:absolute;top:3px;height:6px;border-radius:1px}
+.diverg .barra.su{left:50%;background:var(--in)}
+.diverg .barra.giu{right:50%;background:var(--out)}
+
+/* ── Misc ───────────────────────────────── */
+.warn{
+  background:#2a1f10;border:1px solid var(--brass-dim);color:#e8d49a;
+  padding:11px 16px;font-size:13px;display:none;
+}
+.warn.on{display:block}
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(12px);
+  background:var(--panel-2);border:1px solid var(--brass-dim);
+  padding:10px 18px;border-radius:var(--radius);opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;z-index:60;font-size:13px;
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.row-tools{display:flex;gap:6px;justify-content:flex-end}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end}
+.filters .f-item{min-width:150px}
+.hint{color:var(--muted);font-size:12.5px;margin-top:10px}
+.acct-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+.acct-head h3{font-family:var(--display);font-size:18px;font-weight:400}
+.acct-head .badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass);border:1px solid var(--brass-dim);padding:2px 6px;border-radius:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:flex;align-items:center;gap:6px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:4px 6px 4px 9px;font-size:12.5px}
+.chip button{background:none;border:0;color:var(--muted);cursor:pointer;padding:0 2px;line-height:1}
+.chip button:hover{color:var(--out)}
+
+@media (max-width:860px){
+  .app{flex-direction:column;align-items:stretch}
+  .rail{
+    width:auto;flex:none;flex-direction:row;align-items:center;
+    padding:10px 14px;overflow-x:auto;overflow-y:visible;
+    border-right:0;border-bottom:1px solid var(--line);
+    position:sticky;top:0;height:auto;
+  }
+  .brand{padding:0 16px 0 0;border-bottom:0;border-right:1px solid var(--line-soft);margin:0 14px 0 0;white-space:nowrap}
+  .brand .sub{display:none}
+  .nav{flex-direction:row;padding:0}
+  .nav button .idx{display:none}
+  .rail-foot{display:none}
+  .grid3,.grid4{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .view{padding:16px 14px 60px}
+  .topbar{padding:12px 14px}
+}
+
+/* ══════════════════════════════════════════════
+   TELEFONO — navigazione in basso, tabelle a schede
+   ══════════════════════════════════════════════ */
+@media (max-width:700px){
+  body{font-size:15px}
+
+  /* la barra passa in fondo, dove arriva il pollice */
+  .rail{
+    position:fixed;bottom:0;left:0;right:0;top:auto;
+    padding:0;border-bottom:0;border-top:1px solid var(--line);
+    overflow:visible;z-index:40;
+    padding-bottom:env(safe-area-inset-bottom,0);
+    box-shadow:0 -6px 20px rgba(0,0,0,.35);
+  }
+  .brand{display:none}
+  .nav{flex:1;justify-content:space-around;gap:0}
+  .nav button{
+    flex-direction:column;align-items:center;gap:3px;
+    padding:9px 4px 8px;font-size:11px;letter-spacing:.02em;
+    border-radius:0;min-height:52px;justify-content:center;
+  }
+  .nav button.on{box-shadow:inset 0 2px 0 var(--brass);background:none;color:var(--brass)}
+  .nav button .idx{display:block;font-size:15px;opacity:1;font-family:var(--body)}
+  .nav button.on .idx{color:var(--brass)}
+  main{padding-bottom:64px}
+
+  .topbar{
+    position:sticky;top:0;z-index:25;padding:10px 12px;gap:8px;
+    background:var(--ink);border-bottom:1px solid var(--line);
+  }
+  .topbar .title{font-size:17px;width:100%;margin:0 0 2px}
+  .topbar .btn{flex:1;padding:9px 8px;font-size:13px}
+  .topbar label.f{width:118px!important}
+  .view{padding:14px 12px 30px}
+  .card{padding:14px 12px}
+  .card+.card{margin-top:12px}
+  .grid3,.grid4{grid-template-columns:1fr 1fr;gap:9px}
+  .stat{padding:11px 12px}
+  .stat .v{font-size:18px}
+  .stat .k{font-size:9px}
+
+  /* comandi più grandi da toccare */
+  .btn{padding:10px 14px;min-height:42px}
+  .btn.sm{padding:8px 11px;min-height:38px;font-size:13px}
+  input,select,textarea{padding:10px;min-height:44px;font-size:16px}
+  .months button{min-width:0;flex:1 1 22%;padding:10px 2px}
+
+  /* ── tabelle → schede impilate ── */
+  table.mob-schede,
+  table.mob-schede tbody,
+  table.mob-schede tr,
+  table.mob-schede td{display:block;width:100%}
+  table.mob-schede thead{display:none}
+  .tw-schede,
+  .tw:has(table.mob-schede){
+    border:0;overflow:visible;max-height:none;
+  }
+  table.mob-schede tr{
+    background:var(--panel-2);border:1px solid var(--line);
+    border-radius:var(--radius);padding:11px 12px;margin-bottom:9px;
+    /* rete di sicurezza: una scheda non può collassare a zero */
+    min-height:44px;
+  }
+  /* se per qualsiasi motivo il layout a schede non si applicasse,
+     la tabella resta comunque leggibile scorrendo in orizzontale */
+  .tw-schede{-webkit-overflow-scrolling:touch}
+  table.mob-schede tr:hover{background:var(--panel-2)}
+  table.mob-schede td{
+    border:0;padding:3px 0;display:flex;gap:10px;
+    align-items:baseline;justify-content:space-between;text-align:right;
+  }
+  table.mob-schede td::before{
+    content:attr(data-et);
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);
+    text-align:left;flex:0 0 auto;
+  }
+  table.mob-schede td.num{text-align:right}
+  table.mob-schede td:empty{display:none}
+  table.mob-schede td.vuoto{display:none}
+  table.mob-schede tfoot{display:block}
+  table.mob-schede tfoot tr{background:var(--panel);border-color:var(--brass-dim)}
+  table.mob-schede .row-tools{justify-content:flex-end;width:100%}
+  table.mob-schede td.azioni{padding-top:9px;margin-top:6px;border-top:1px solid var(--line-soft)}
+  table.mob-schede td.azioni::before{content:""}
+  table.mob-schede .originale{max-width:62vw;white-space:normal}
+
+  /* prima riga della scheda: data e importo in evidenza */
+  table.mob-schede td.testata{
+    font-size:17px;font-family:var(--mono);padding-bottom:7px;
+    border-bottom:1px solid var(--line-soft);margin-bottom:5px;
+  }
+  table.mob-schede td.testata::before{
+    font-size:12px;letter-spacing:0;text-transform:none;
+    font-family:var(--body);color:var(--text);align-self:center;
+  }
+
+  /* filtri di colonna a tutta larghezza */
+  .col-pop{
+    position:fixed;top:auto;bottom:64px;left:8px;right:8px;
+    max-width:none;min-width:0;max-height:64vh;overflow:auto;
+  }
+  .filters{gap:8px}
+  .filters .f-item{min-width:0;width:100%}
+
+  /* modali a schermo pieno */
+  .mask{padding:0;align-items:stretch}
+  .modal{
+    max-width:none;border-radius:0;min-height:100vh;
+    padding:18px 14px calc(24px + env(safe-area-inset-bottom,0));
+  }
+  .modal-foot{position:sticky;bottom:0;background:var(--panel);padding-top:14px;margin-top:22px}
+  .modal-foot .btn{flex:1}
+
+  .regola-head{gap:9px}
+  .regola-head .tipo{margin-left:0;width:100%;order:5}
+  .regola-head .row-tools{width:100%;order:6}
+  .ribbon-bar{height:28px}
+  .chart{height:170px}
+  .diverg{min-width:70px}
+  .quadratura{font-size:12px}
+  .empty{padding:26px 12px}
+}
+@media (max-width:520px){
+  .grid3,.grid4{grid-template-columns:1fr}
+  .months button{flex:1 1 30%}
+}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <span class="mark">Libro<br>Mastro</span>
+      <span class="sub">Finanze personali</span>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-view="riepilogo" class="on"><span class="idx">I</span>Riepilogo</button>
+      <button data-view="investimenti"><span class="idx">II</span>Investimenti</button>
+      <button data-view="movimenti"><span class="idx">III</span>Movimenti</button>
+      <button data-view="impostazioni"><span class="idx">·</span>Impostazioni</button>
+    </nav>
+    <div class="rail-foot">
+      <div class="stamp" id="stamp">— voci<br>salvato in locale</div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="warn" id="warn"></div>
+
+    <div class="topbar">
+      <div class="title" id="viewTitle">Riepilogo</div>
+      <label class="f" style="width:150px">
+        <span>Anno</span>
+        <div style="display:flex;gap:5px">
+          <select id="yearSel"></select>
+          <button class="btn" id="btnAnno" title="Aggiungi un anno all'elenco" style="padding:7px 11px">+</button>
+        </div>
+      </label>
+      <button class="btn primary" id="btnInstalla" style="display:none">Installa app</button>
+      <button class="btn" id="btnImport">Importa dati</button>
+      <button class="btn" id="btnExport">Esporta backup</button>
+      <input type="file" id="fileIn" accept=".json,application/json" hidden>
+    </div>
+
+    <!-- ══ III · MOVIMENTI ════════════════════════ -->
+    <section class="view" id="view-movimenti">
+      <div class="months" id="monthStrip"></div>
+
+      <div class="grid4" style="margin-bottom:16px">
+        <div class="stat"><div class="k">Entrate</div><div class="v pos" id="mIn">—</div><div class="d" id="mInN"></div></div>
+        <div class="stat"><div class="k">Uscite</div><div class="v neg" id="mOut">—</div><div class="d" id="mOutN"></div></div>
+        <div class="stat"><div class="k">Saldo del mese</div><div class="v" id="mNet">—</div><div class="d" id="mRate"></div></div>
+        <div class="stat"><div class="k">Spesa superflua</div><div class="v" id="mSup">—</div><div class="d" id="mSupN"></div></div>
+      </div>
+
+      <div class="card" id="incompleteCard" style="display:none">
+        <h2>Voci da completare</h2>
+        <div id="incompleteBox"></div>
+      </div>
+
+      <div class="card" id="planCard">
+        <h2>Piano di allocazione — <span id="planMese"></span></h2>
+        <div id="planBox"></div>
+      </div>
+
+      <div class="card">
+        <div class="filters">
+          <div class="f-item" style="flex:1">
+            <label class="f"><span>Cerca ovunque</span><input type="search" id="q" placeholder="dettaglio, argomento, portafoglio…"></label>
+          </div>
+          <button class="btn ghost" id="btnResetF" style="display:none">Azzera filtri</button>
+          <button class="btn primary" id="btnNew">Aggiungi voce</button>
+        </div>
+        <div class="tw tw-schede">
+          <table id="txTable" class="mob-schede">
+            <thead><tr>
+              <th class="filtrabile" data-col="data" style="width:112px">Data</th>
+              <th class="filtrabile num" data-col="importo" style="width:126px">Importo</th>
+              <th class="filtrabile" data-col="argomento">Argomento</th>
+              <th class="filtrabile" data-col="dettaglio">Dettaglio</th>
+              <th class="filtrabile" data-col="portafoglio">Portafoglio</th>
+              <th class="filtrabile" data-col="allocazione">Allocazione</th>
+              <th class="filtrabile" data-col="necessita" style="width:120px">Necessità</th>
+              <th style="width:112px"></th>
+            </tr></thead>
+            <tbody id="txBody"></tbody>
+            <tfoot id="txFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ I · RIEPILOGO ══════════════════════════ -->
+    <section class="view on" id="view-riepilogo">
+      <div class="grid4" style="margin-bottom:16px">
+        <div class="stat"><div class="k">Entrate anno</div><div class="v pos" id="yIn">—</div></div>
+        <div class="stat"><div class="k">Uscite anno</div><div class="v neg" id="yOut">—</div></div>
+        <div class="stat"><div class="k">Saldo anno</div><div class="v" id="yNet">—</div></div>
+        <div class="stat"><div class="k">Tasso di risparmio</div><div class="v" id="yRate">—</div><div class="d">saldo ÷ entrate</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Andamento mensile</h2>
+        <svg class="chart" id="chart" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div class="card">
+        <h2>Dettaglio per mese</h2>
+        <div class="tw tw-schede">
+          <table class="mob-schede">
+            <thead><tr>
+              <th>Mese</th><th class="num">Entrate</th><th class="num">Uscite</th>
+              <th class="num">Saldo</th><th class="num">Risparmio</th><th class="num">Voci</th>
+            </tr></thead>
+            <tbody id="sumBody"></tbody>
+            <tfoot id="sumFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Allocazione dei risparmi <span class="dim" style="text-transform:none;letter-spacing:0;font-family:var(--body)">— tutti gli anni, saldi iniziali inclusi</span></h2>
+        <div class="ribbon">
+          <div class="ribbon-bar" id="ribbon"></div>
+          <div class="ribbon-scale" id="notches"></div>
+        </div>
+        <div class="tw tw-schede">
+          <table class="mob-schede">
+            <thead><tr>
+              <th>Fondo</th><th class="num">Saldo</th><th class="num">Quota</th>
+              <th class="num">Obiettivo</th><th class="num">Progresso</th><th class="num">Mancante</th>
+              <th style="width:230px"></th>
+            </tr></thead>
+            <tbody id="allocBody"></tbody>
+            <tfoot id="allocFoot"></tfoot>
+          </table>
+        </div>
+        <div class="quadratura" id="quadratura"></div>
+        <p class="hint">I fondi sono una suddivisione teorica del tuo denaro liquido: la loro somma è sempre pari a quanto hai. Una spesa <b>sottrae</b> dal fondo indicato (o da <b>Non allocato</b> se non ne scegli uno), un'entrata <b>aggiunge</b>, e un giroconto sposta denaro tra due fondi senza toccare il totale.<br>Raggiunto l'obiettivo puoi segnare un fondo come <b>completato</b>: resta in elenco, evidenziato. Quando ne hai speso il capitale per la finalità prevista, segnalo come <b>concluso</b> e scende in fondo, in secondo piano. Entrambi i passaggi sono reversibili.</p>
+      </div>
+
+      <div class="card">
+        <h2>Uscite per argomento — anno <span id="yLabel"></span></h2>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Argomento</th><th class="num">Totale</th><th class="num">Quota</th><th class="num">Media/mese</th></tr></thead>
+            <tbody id="catBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ II · INVESTIMENTI ══════════════════════ -->
+    <section class="view" id="view-investimenti">
+      <div class="grid3" style="margin-bottom:16px">
+        <div class="stat"><div class="k">Patrimonio investito</div><div class="v" id="invTot">—</div><div class="d" id="invTotD"></div></div>
+        <div class="stat"><div class="k">Capitale versato</div><div class="v" id="invPaid">—</div><div class="d">somma di tutti i versamenti registrati</div></div>
+        <div class="stat"><div class="k">Plus/minusvalenza</div><div class="v" id="invPl">—</div><div class="d" id="invPlD"></div></div>
+      </div>
+      <div id="accounts"></div>
+      <p class="hint">Ogni rilevazione è una fotografia del saldo a una certa data. Le variazioni sono sempre calcolate <b>al netto dei versamenti</b>: mostrano quanto ha reso il mercato, non quanto hai aggiunto tu. Gli anni diversi da quello scelto in alto si riducono a una riga di sintesi: cliccaci sopra per aprirli. L'asterisco segnala il primo anno di un conto, dove la percentuale è rapportata al capitale versato invece che al saldo iniziale, che non esiste ancora.</p>
+    </section>
+
+    <!-- ══ IMPOSTAZIONI ═══════════════════════════ -->
+    <section class="view" id="view-impostazioni">
+      <div class="card">
+        <h2>Fondi di allocazione</h2>
+        <div class="tw tw-schede">
+          <table class="mob-schede">
+            <thead><tr><th>Fondo</th><th class="num" style="width:170px">Saldo iniziale €</th><th class="num" style="width:170px">Obiettivo €</th><th style="width:180px"></th></tr></thead>
+            <tbody id="setAlloc"></tbody>
+            <tfoot id="setAllocFoot"></tfoot>
+          </table>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;max-width:400px">
+          <input type="text" id="newAlloc" placeholder="Nuovo fondo (es. Riscatto auto)" maxlength="40">
+          <button class="btn" id="btnAddAlloc">Aggiungi fondo</button>
+        </div>
+        <p class="hint">Il saldo iniziale è quanto avevi già da parte in quel fondo prima di iniziare a registrare i movimenti qui. L'obiettivo è la cifra a cui vuoi arrivare; lascia zero se per quel fondo non hai un traguardo. Rinominando un fondo si aggiornano anche i movimenti e le regole che lo usano.</p>
+      </div>
+
+      <div class="card">
+        <h2>Anni nel menu</h2>
+        <p class="hint" style="margin:0 0 12px">Gli anni in cui hai movimenti o rilevazioni compaiono da soli. Qui sotto ci sono solo quelli che hai aggiunto a mano con il pulsante <b>+</b> in alto: puoi rimuoverli se li hai creati per errore.</p>
+        <div class="chips" id="chipsAnni"></div>
+      </div>
+
+      <div class="card">
+        <h2>Allocazione automatica dalle entrate</h2>
+        <p class="hint" style="margin:0 0 14px">Le regole si applicano in ordine alle entrate del mese: prima la riga in cima, poi le altre finché il denaro basta. Le percentuali si calcolano sul totale delle entrate del mese. Ogni valore può essere espresso in euro o in percentuale, e le due cifre restano memorizzate entrambe.</p>
+        <div id="setRegole"></div>
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:flex-end">
+          <label class="f" style="width:210px"><span>Fondo</span><select id="rFondo"></select></label>
+          <label class="f" style="width:170px"><span>Struttura</span><select id="rTipo">
+            <option value="semplice">Valore unico</option>
+            <option value="scaglioni">A scaglioni</option>
+          </select></label>
+          <button class="btn primary" id="rAdd">Aggiungi regola</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Argomenti</h2>
+        <div class="chips" id="chipsArg"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;max-width:360px">
+          <input type="text" id="newArg" placeholder="Nuovo argomento">
+          <button class="btn" data-add="argomenti">Aggiungi</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Portafogli</h2>
+        <div class="chips" id="chipsPort"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;max-width:360px">
+          <input type="text" id="newPort" placeholder="Nuovo portafoglio">
+          <button class="btn" data-add="portafogli">Aggiungi</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Livelli di necessità</h2>
+        <p class="hint" style="margin:0 0 12px">Ordinati dal più necessario al più rinunciabile: la posizione determina il colore dell'etichetta. Il primo della lista è quello proposto per le nuove uscite.</p>
+        <div class="chips" id="chipsNec"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;max-width:400px">
+          <input type="text" id="newNec" placeholder="Nuovo livello" maxlength="40">
+          <button class="btn" data-add="necessita">Aggiungi</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Dati</h2>
+        <div style="display:flex;gap:9px;flex-wrap:wrap">
+          <button class="btn" id="btnExport2">Esporta backup JSON</button>
+          <button class="btn" id="btnImport2">Importa file JSON</button>
+          <button class="btn" id="btnDemo">Carica dati di esempio</button>
+          <button class="btn danger" id="btnWipe">Cancella tutto</button>
+        </div>
+        <p class="hint">L'importazione riconosce i duplicati: una voce già presente (stessa data, importo, dettaglio e portafoglio) non viene inserita due volte. Puoi quindi rilanciare lo script sullo stesso mese senza timori.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ── Modale movimento ── -->
+<div class="mask" id="txMask">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="txTitle">
+    <h3 id="txTitle">Nuova voce</h3>
+    <div class="form-grid">
+      <div class="full">
+        <label class="f"><span>Tipo</span></label>
+        <div class="seg" id="tipoSeg">
+          <button type="button" data-tipo="Uscita" class="on">Uscita</button>
+          <button type="button" data-tipo="Entrata">Entrata</button>
+          <button type="button" data-tipo="Giroconto" title="Sposta denaro da un fondo all'altro senza spenderlo">Giroconto</button>
+        </div>
+      </div>
+      <label class="f"><span>Data</span><input type="date" id="fData"></label>
+      <label class="f"><span>Importo €</span><input type="number" id="fImporto" step="0.01" min="0" placeholder="0,00"></label>
+      <label class="f" id="wArg"><span>Argomento</span><select id="fArg"></select></label>
+      <label class="f" id="wPort"><span>Portafoglio</span><select id="fPortM"></select></label>
+      <label class="f full"><span>Dettaglio</span><input type="text" id="fDett" placeholder="Descrizione della voce"></label>
+      <label class="f" id="wOrig" style="display:none"><span>Preleva dal fondo</span><select id="fOrig"></select></label>
+      <label class="f" id="wAlloc"><span id="lblAlloc">Attingi dal fondo</span><select id="fAllocM"></select></label>
+      <label class="f" id="wNec"><span>Necessità</span><select id="fNec"></select></label>
+      <div class="full" id="notaAlloc"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="txCancel">Annulla</button>
+      <button class="btn primary" id="txSave">Salva voce</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modale rilevazione investimento ── -->
+<div class="mask" id="invMask">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="invTitle" style="max-width:480px">
+    <h3 id="invTitle">Nuova rilevazione</h3>
+    <div class="form-grid">
+      <label class="f"><span>Data</span><input type="date" id="iData"></label>
+      <label class="f"><span>Saldo €</span><input type="number" id="iSaldo" step="0.01"></label>
+      <label class="f full"><span id="iVersatoLbl">Versato dall'ultima rilevazione €</span><input type="number" id="iVersato" step="0.01" placeholder="0,00"></label>
+      <div class="full" id="iVersatoNota" style="margin-top:-4px"></div>
+      <label class="f full"><span>Nota</span><input type="text" id="iNota" placeholder="facoltativa"></label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="invCancel">Annulla</button>
+      <button class="btn primary" id="invSave">Salva rilevazione</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modale eliminazione fondo ── -->
+<div class="mask" id="allocMask">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="allocTitle" style="max-width:480px">
+    <h3 id="allocTitle">Elimina fondo</h3>
+    <p class="hint" id="allocMsg" style="margin-top:0"></p>
+    <label class="f" id="allocDestWrap"><span>Sposta i movimenti su</span><select id="allocDest"></select></label>
+    <div class="modal-foot">
+      <button class="btn ghost" id="allocCancel">Annulla</button>
+      <button class="btn danger" id="allocConfirm">Elimina fondo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════
+   Storage — localStorage con fallback in memoria
+   ═══════════════════════════════════════════════ */
+var MEM_ONLY = false;
+var store = (function(){
+  try{
+    localStorage.setItem("__probe__","1");
+    localStorage.removeItem("__probe__");
+    return localStorage;
+  }catch(e){
+    MEM_ONLY = true;
+    var m = {};
+    return {
+      getItem:function(k){ return k in m ? m[k] : null; },
+      setItem:function(k,v){ m[k]=String(v); },
+      removeItem:function(k){ delete m[k]; }
+    };
+  }
+})();
+var KEY = "libromastro.v1";
+
+/* ═══════════════════════════════════════════════
+   Stato
+   ═══════════════════════════════════════════════ */
+var MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+var MESI_S = ["GEN","FEB","MAR","APR","MAG","GIU","LUG","AGO","SET","OTT","NOV","DIC"];
+var BUCKET_COLORS = {
+  "Fondo di emergenza":"var(--b-fondo)",
+  "Casa":"var(--b-casa)",
+  "Trading":"var(--b-trading)",
+  "Investimenti":"var(--b-invest)",
+  "Riscatto auto":"var(--b-auto)",
+  "Non allocato":"var(--b-extra)",
+  "Extra":"var(--b-extra)"
+};
+/* i fondi creati a mano ricevono un colore stabile, derivato dal nome */
+var PALETTE = ["#6fb3a8","#c98f4a","#8d9ed6","#c4708f","#9db85a","#57a0c4","#b78bd0","#d0a44c"];
+/* la posizione nella lista determina il colore: primo = più necessario */
+function classeNecessita(v){
+  var i=S.config.necessita.indexOf(v);
+  if(i<0) return "";
+  var n=S.config.necessita.length;
+  if(n<=1) return "n0";
+  return "n"+Math.round(i/(n-1)*4);
+}
+function coloreFondo(nome){
+  if(BUCKET_COLORS[nome]) return BUCKET_COLORS[nome];
+  var h=0, s=String(nome||"");
+  for(var i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i)) >>> 0; }
+  return PALETTE[h % PALETTE.length];
+}
+
+function defaults(){
+  return {
+    version:1,
+    transactions:[],
+    conti:[
+      {id:"ibkr", nome:"IBKR", tipo:"Broker", snapshots:[]},
+      {id:"previambiente", nome:"Previambiente", tipo:"Fondo pensione", snapshots:[]},
+      {id:"a2a", nome:"Azioni A2A", tipo:"Azioni", snapshots:[]}
+    ],
+    config:{
+      schema:6,
+      argomenti:["Stipendio","Alimentari","Casa","Bollette","Trasporti","Salute","Svago","Abbonamenti","Shopping","Ristoranti","Viaggi","Risparmio","Investimenti","Altro"],
+      portafogli:["Conto corrente","Contanti","Carta di credito","Prepagata","PayPal"],
+      necessita:["Necessaria","Utile","Superflua"],
+      allocazioni:["Fondo di emergenza","Casa","Trading","Investimenti","Riscatto auto","Non allocato"],
+      saldiIniziali:{"Fondo di emergenza":0,"Casa":0,"Trading":0,"Investimenti":0,"Riscatto auto":0,"Non allocato":0},
+      obiettivi:{"Fondo di emergenza":0,"Casa":0,"Trading":0,"Investimenti":0,"Riscatto auto":0,"Non allocato":0},
+      anni:[],
+      statoFondi:{},
+      regole:[]
+    }
+  };
+}
+
+var S = load();
+var view = "riepilogo";
+var year = new Date().getFullYear();
+var month = new Date().getMonth();
+var editingId = null;
+var editingAcct = null, editingSnap = null;
+var formTipo = "Uscita";
+
+/* Rimuove i fondi ereditati (non previsti dai default) rimasti senza dati:
+   finché contengono qualcosa restano, così nulla sparisce di nascosto. */
+function pulisciAllocazioni(d){
+  var previsti = defaults().config.allocazioni;
+  var superflui = d.config.allocazioni.filter(function(a){ return previsti.indexOf(a)<0; });
+  if(!superflui.length) return;
+  superflui.forEach(function(a){
+    var inUso = (d.transactions||[]).some(function(t){ return t.allocazione===a; })
+      || Math.abs(Number(d.config.saldiIniziali[a])||0) > 0.005
+      || Math.abs(Number(d.config.obiettivi[a])||0) > 0.005
+      || (d.config.regole||[]).some(function(r){ return r.fondo===a; });
+    if(inUso) return;
+    d.config.allocazioni = d.config.allocazioni.filter(function(x){ return x!==a; });
+    delete d.config.saldiIniziali[a];
+    delete d.config.obiettivi[a];
+  });
+}
+
+function load(){
+  try{
+    var raw = store.getItem(KEY);
+    if(!raw) return defaults();
+    var d = JSON.parse(raw), base = defaults();
+    var schemaPrec = (d.config && Number(d.config.schema)) || 0;
+    d.config = Object.assign(base.config, d.config||{});
+    if(!Array.isArray(d.config.regole)) d.config.regole = [];
+    if(!Array.isArray(d.config.anni)) d.config.anni = [];
+    if(!d.config.statoFondi || typeof d.config.statoFondi!=="object") d.config.statoFondi = {};
+    if(!Array.isArray(d.config.necessita) || !d.config.necessita.length){
+      d.config.necessita = defaults().config.necessita.slice();
+    }
+    if(!Array.isArray(d.transactions)) d.transactions = [];
+    /* schema 2: gli obiettivi erano percentuali, ora sono importi in euro */
+    if(schemaPrec < 2){
+      d.config.allocazioni.forEach(function(a){ d.config.obiettivi[a] = 0; });
+    }
+    /* schema 3: regole con doppio valore €/% e scaglioni */
+    if(schemaPrec < 3){
+      d.config.regole = d.config.regole.map(function(r){
+        return {
+          id: r.id || ("r"+Math.random().toString(36).slice(2,8)),
+          fondo: r.fondo, tipo:"semplice", attiva: r.attiva!==false,
+          valore: {
+            modo: r.modo==="percentuale" ? "percentuale" : "importo",
+            percentuale: r.modo==="percentuale" ? (Number(r.valore)||0) : 0,
+            importo: r.modo==="importo" ? (Number(r.valore)||0) : 0
+          },
+          scaglioni: []
+        };
+      });
+    }
+    /* schema 4: fondo Riscatto auto e rimozione del 2022 aggiunto per sbaglio */
+    if(schemaPrec < 4){
+      if(d.config.allocazioni.indexOf("Riscatto auto") < 0){
+        var dove = d.config.allocazioni.indexOf("Non allocato");
+        if(dove < 0) dove = d.config.allocazioni.length;
+        d.config.allocazioni.splice(dove, 0, "Riscatto auto");
+        if(d.config.saldiIniziali["Riscatto auto"] == null) d.config.saldiIniziali["Riscatto auto"] = 0;
+        if(d.config.obiettivi["Riscatto auto"] == null) d.config.obiettivi["Riscatto auto"] = 0;
+      }
+      var usa2022 = (d.transactions||[]).some(function(t){ return t.data && t.data.slice(0,4)==="2022"; });
+      if(!usa2022) d.config.anni = d.config.anni.filter(function(a){ return Number(a)!==2022; });
+    }
+    /* schema 5: il versato passa da cumulativo a incrementale per rilevazione */
+    if(schemaPrec < 5){
+      (d.conti||[]).forEach(function(c){
+        var s=(c.snapshots||[]).slice().sort(function(a,b){ return a.data<b.data?-1:1; });
+        var prec=0;
+        s.forEach(function(sn){
+          if(sn.versatoDelta != null) { prec = prec + (Number(sn.versatoDelta)||0); return; }
+          var cum = sn.versato==null ? null : Number(sn.versato)||0;
+          if(cum==null){ sn.versatoDelta = 0; }
+          else { sn.versatoDelta = Math.round((cum-prec)*100)/100; prec = cum; }
+          delete sn.versato;
+        });
+        c.snapshots = s;
+      });
+    }
+    /* schema 6: i fondi diventano una partizione del liquido.
+       Le uscite allocate ora *sottraggono* dal fondo, quindi i versamenti
+       generati dal piano vanno riscritti come giroconti. */
+    if(schemaPrec < 6){
+      (d.transactions||[]).forEach(function(t){
+        if(t.auto && t.tipo==="Uscita" && t.allocazione){
+          t.tipo="Giroconto";
+          t.origine=FONDO_BASE;
+          t.portafoglio="";
+          t.necessita="—";
+        }
+      });
+    }
+    d.config.schema = 6;
+    pulisciAllocazioni(d);
+    if(!Array.isArray(d.conti) || !d.conti.length) d.conti = base.conti;
+    return d;
+  }catch(e){ return defaults(); }
+}
+function save(){
+  try{ store.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ toast("Salvataggio non riuscito: spazio esaurito"); }
+  renderStamp();
+}
+
+/* ═══════════════════════════════════════════════
+   Utility
+   ═══════════════════════════════════════════════ */
+var eur = new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR",maximumFractionDigits:2});
+var eur0 = new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+function money(n){ return eur.format(n||0); }
+function pct(n){ return (Math.round((n||0)*10)/10).toLocaleString("it-IT")+"%"; }
+function $(id){ return document.getElementById(id); }
+function el(tag,cls,txt){ var e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
+/* Su telefono le righe diventano schede: ogni cella mostra l'etichetta
+   della sua colonna, presa da data-et. */
+function cella(etichetta,cls,txt){
+  var e=document.createElement("td");
+  if(cls) e.className=cls;
+  if(etichetta) e.setAttribute("data-et",etichetta);
+  if(txt!=null) e.textContent=txt;
+  return e;
+}
+function esc(s){ return String(s==null?"":s); }
+function ymd(d){ var p=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); }
+function dmy(iso){ if(!iso) return "—"; var p=iso.split("-"); return p.length===3 ? p[2]+"/"+p[1]+"/"+p[0] : iso; }
+function uid(){ return "t"+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+/* firma per la deduplica in import */
+function fingerprint(t){
+  return [t.data, Number(t.importo).toFixed(2), (t.tipo||"").toLowerCase(),
+          (t.dettaglio||"").trim().toLowerCase().replace(/\s+/g," "),
+          (t.portafoglio||"").toLowerCase()].join("|");
+}
+function toast(msg){
+  var t=$("toast"); t.textContent=msg; t.classList.add("on");
+  clearTimeout(toast._t); toast._t=setTimeout(function(){t.classList.remove("on");},2600);
+}
+function tx(){ return S.transactions; }
+function txOf(y,m){
+  return tx().filter(function(t){
+    if(!t.data) return false;
+    var p=t.data.split("-");
+    return +p[0]===y && (m==null || +p[1]-1===m);
+  });
+}
+function sumBy(list,tipo){
+  return list.reduce(function(a,t){ return a + (t.tipo===tipo ? Number(t.importo)||0 : 0); },0);
+}
+function years(){
+  var set={};
+  tx().forEach(function(t){ if(t.data) set[t.data.slice(0,4)]=1; });
+  S.conti.forEach(function(c){ (c.snapshots||[]).forEach(function(s){ if(s.data) set[s.data.slice(0,4)]=1; }); });
+  (S.config.anni||[]).forEach(function(a){ set[String(a)]=1; });
+  set[new Date().getFullYear()]=1; set[year]=1;
+  return Object.keys(set).sort().reverse();
+}
+function aggiungiAnno(){
+  var risposta=prompt("Quale anno vuoi aggiungere all'elenco?", String(new Date().getFullYear()+1));
+  if(risposta===null) return;
+  var a=parseInt(String(risposta).trim(),10);
+  if(!(a>=1990 && a<=2100)){ toast("Inserisci un anno tra il 1990 e il 2100"); return; }
+  S.config.anni = S.config.anni||[];
+  if(S.config.anni.indexOf(a)<0) S.config.anni.push(a);
+  S.config.anni.sort();
+  year=a; save(); renderAll(); toast("Anno "+a+" disponibile");
+}
+
+/* ═══════════════════════════════════════════════
+   Navigazione
+   ═══════════════════════════════════════════════ */
+$("nav").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-view]"); if(!b) return;
+  view=b.dataset.view;
+  [].forEach.call(document.querySelectorAll(".nav button"),function(x){ x.classList.toggle("on",x===b); });
+  [].forEach.call(document.querySelectorAll(".view"),function(v){ v.classList.toggle("on", v.id==="view-"+view); });
+  /* il titolo è l'ultimo nodo di testo, dopo il numero romano */
+  $("viewTitle").textContent = (b.lastChild && b.lastChild.textContent || "").trim();
+  window.scrollTo(0,0);
+  renderAll();
+});
+
+$("yearSel").addEventListener("change",function(){ year=+this.value; renderAll(); });
+$("btnAnno").addEventListener("click",aggiungiAnno);
+
+/* ═══════════════════════════════════════════════
+   Render — comune
+   ═══════════════════════════════════════════════ */
+function renderStamp(){
+  var n=tx().length;
+  $("stamp").innerHTML = n+" voc"+(n===1?"e":"i")+"<br>"+(MEM_ONLY?"non salvato":"salvato in locale");
+}
+function fillSelect(sel, items, allLabel, current){
+  sel.innerHTML="";
+  if(allLabel!=null){ var o=document.createElement("option"); o.value=""; o.textContent=allLabel; sel.appendChild(o); }
+  items.forEach(function(v){ var o=document.createElement("option"); o.value=v; o.textContent=v; sel.appendChild(o); });
+  if(current!=null) sel.value=current;
+}
+function renderYearSel(){
+  var ys=years(), cur=String(year);
+  $("yearSel").innerHTML="";
+  ys.forEach(function(y){ var o=document.createElement("option"); o.value=y; o.textContent=y; $("yearSel").appendChild(o); });
+  $("yearSel").value=cur;
+}
+
+function renderAll(){
+  renderYearSel(); renderStamp();
+  if(view==="movimenti") renderMovimenti();
+  if(view==="riepilogo") renderRiepilogo();
+  if(view==="investimenti") renderInvestimenti();
+  if(view==="impostazioni") renderImpostazioni();
+}
+
+/* ═══════════════════════════════════════════════
+   III · Movimenti
+   ═══════════════════════════════════════════════ */
+function renderMonthStrip(){
+  var strip=$("monthStrip"); strip.innerHTML="";
+  for(var m=0;m<12;m++){
+    (function(m){
+      var list=txOf(year,m);
+      var net=sumBy(list,"Entrata")-sumBy(list,"Uscita");
+      var b=el("button",m===month?"on":"");
+      b.appendChild(el("span",null,MESI_S[m]));
+      var s=el("span","m-net "+(list.length?(net>=0?"pos":"neg"):"dim"), list.length? eur0.format(net) : "—");
+      b.appendChild(s);
+      b.addEventListener("click",function(){ month=m; renderMovimenti(); });
+      strip.appendChild(b);
+    })(m);
+  }
+}
+/* ── Filtri per colonna ────────────────────
+   Ogni colonna filtra sul proprio campo; la ricerca in alto cerca ovunque. */
+var F = {data:{da:"",a:""}, importo:{min:"",max:"",tipi:[]},
+         argomento:[], dettaglio:"", portafoglio:[], allocazione:[], necessita:[]};
+
+function valoreColonna(t, col){
+  if(col==="allocazione") return t.tipo==="Giroconto" ? fondoDi(t) : fondoDi(t);
+  if(col==="necessita") return (t.necessita && t.necessita!=="—") ? t.necessita : "—";
+  if(col==="portafoglio") return t.portafoglio || "—";
+  if(col==="argomento") return t.tipo==="Giroconto" ? "Giroconto" : (t.argomento || "—");
+  return t[col] || "";
+}
+function filtroAttivo(col){
+  var f=F[col];
+  if(col==="data") return !!(f.da||f.a);
+  if(col==="importo") return !!(f.min!==""||f.max!==""||f.tipi.length);
+  if(col==="dettaglio") return !!f;
+  return f.length>0;
+}
+function filtriAttivi(){
+  return ["data","importo","argomento","dettaglio","portafoglio","allocazione","necessita"]
+    .filter(filtroAttivo);
+}
+function azzeraFiltri(){
+  F={data:{da:"",a:""}, importo:{min:"",max:"",tipi:[]},
+     argomento:[], dettaglio:"", portafoglio:[], allocazione:[], necessita:[]};
+  $("q").value="";
+  chiudiPop(); renderMovimenti();
+}
+
+function passaFiltri(t){
+  if(F.data.da && t.data < F.data.da) return false;
+  if(F.data.a  && t.data > F.data.a)  return false;
+  var imp=Number(t.importo)||0;
+  if(F.importo.min!=="" && imp < Number(F.importo.min)) return false;
+  if(F.importo.max!=="" && imp > Number(F.importo.max)) return false;
+  if(F.importo.tipi.length && F.importo.tipi.indexOf(t.tipo)<0) return false;
+  if(F.dettaglio && (t.dettaglio||"").toLowerCase().indexOf(F.dettaglio.toLowerCase())<0) return false;
+  var cat=["argomento","portafoglio","allocazione","necessita"];
+  for(var i=0;i<cat.length;i++){
+    var c=cat[i];
+    if(F[c].length && F[c].indexOf(valoreColonna(t,c))<0) return false;
+  }
+  return true;
+}
+
+function currentFiltered(){
+  var q=$("q").value.trim().toLowerCase();
+  return txOf(year,month).filter(function(t){
+    if(!passaFiltri(t)) return false;
+    if(q){
+      var hay=((t.dettaglio||"")+" "+(t.argomento||"")+" "+(t.portafoglio||"")+" "+
+               (t.allocazione||"")+" "+(t.necessita||"")+" "+t.data+" "+t.importo).toLowerCase();
+      if(hay.indexOf(q)<0) return false;
+    }
+    return true;
+  }).sort(function(a,b){ return a.data<b.data?-1:a.data>b.data?1:0; });
+}
+
+/* ── Popover di colonna ── */
+var popAperto=null;
+function chiudiPop(){
+  var p=$("colPop"); if(p) p.remove();
+  popAperto=null;
+  [].forEach.call(document.querySelectorAll("th.filtrabile"),function(th){ th.classList.remove("aperto"); });
+}
+function apriPop(th, col){
+  if(popAperto===col){ chiudiPop(); return; }
+  chiudiPop();
+  popAperto=col;
+  th.classList.add("aperto");
+
+  var pop=el("div"); pop.id="colPop"; pop.className="col-pop";
+  pop.addEventListener("click",function(e){ e.stopPropagation(); });
+
+  var titolo=el("div","pop-tit", th.textContent.trim());
+  pop.appendChild(titolo);
+  var corpo=el("div","pop-corpo");
+
+  if(col==="data"){
+    var ultimo=new Date(year,month+1,0).getDate();
+    [["da","Dal"],["a","Al"]].forEach(function(par){
+      var l=el("label","f"); l.appendChild(el("span",null,par[1]));
+      var i=document.createElement("input"); i.type="date";
+      i.min=year+"-"+String(month+1).padStart(2,"0")+"-01";
+      i.max=year+"-"+String(month+1).padStart(2,"0")+"-"+String(ultimo).padStart(2,"0");
+      i.value=F.data[par[0]];
+      i.addEventListener("change",function(){ F.data[par[0]]=this.value; renderMovimenti(); });
+      l.appendChild(i); corpo.appendChild(l);
+    });
+  } else if(col==="importo"){
+    var riga=el("div","pop-riga");
+    [["min","Da €"],["max","A €"]].forEach(function(par){
+      var l=el("label","f"); l.appendChild(el("span",null,par[1]));
+      var i=document.createElement("input"); i.type="number"; i.step="0.01"; i.min="0";
+      i.value=F.importo[par[0]];
+      i.addEventListener("input",function(){ F.importo[par[0]]=this.value; renderMovimenti(); });
+      l.appendChild(i); riga.appendChild(l);
+    });
+    corpo.appendChild(riga);
+    corpo.appendChild(el("div","pop-sep","Tipo"));
+    ["Uscita","Entrata","Giroconto"].forEach(function(v){
+      corpo.appendChild(vocePop(v, F.importo.tipi.indexOf(v)>=0, function(on){
+        if(on) F.importo.tipi.push(v);
+        else F.importo.tipi=F.importo.tipi.filter(function(x){ return x!==v; });
+        renderMovimenti();
+      }));
+    });
+  } else if(col==="dettaglio"){
+    var l=el("label","f"); l.appendChild(el("span",null,"Contiene"));
+    var i=document.createElement("input"); i.type="search"; i.value=F.dettaglio;
+    i.placeholder="testo del dettaglio";
+    i.addEventListener("input",function(){ F.dettaglio=this.value; renderMovimenti(); });
+    l.appendChild(i); corpo.appendChild(l);
+    setTimeout(function(){ i.focus(); },30);
+  } else {
+    /* valori realmente presenti nel mese, con quante voci ciascuno */
+    var conta={}, base=txOf(year,month);
+    base.forEach(function(t){ var v=valoreColonna(t,col); conta[v]=(conta[v]||0)+1; });
+    var valori=Object.keys(conta).sort(function(a,b){
+      return conta[b]-conta[a] || (a<b?-1:1);
+    });
+    if(!valori.length) corpo.appendChild(el("div","pop-vuoto","Nessun valore in questo mese"));
+    valori.forEach(function(v){
+      corpo.appendChild(vocePop(v+" · "+conta[v], F[col].indexOf(v)>=0, function(on){
+        if(on) F[col].push(v);
+        else F[col]=F[col].filter(function(x){ return x!==v; });
+        renderMovimenti();
+      }));
+    });
+  }
+  pop.appendChild(corpo);
+
+  var piede=el("div","pop-piede");
+  var pul=el("button","btn sm ghost","Togli filtro");
+  pul.addEventListener("click",function(){
+    if(col==="data") F.data={da:"",a:""};
+    else if(col==="importo") F.importo={min:"",max:"",tipi:[]};
+    else if(col==="dettaglio") F.dettaglio="";
+    else F[col]=[];
+    renderMovimenti();
+  });
+  var ok=el("button","btn sm","Chiudi");
+  ok.addEventListener("click",chiudiPop);
+  piede.appendChild(pul); piede.appendChild(ok);
+  pop.appendChild(piede);
+
+  th.appendChild(pop);
+}
+function vocePop(etichetta, attiva, onToggle){
+  var r=el("label","pop-voce");
+  var c=document.createElement("input"); c.type="checkbox"; c.checked=attiva;
+  c.addEventListener("change",function(){ onToggle(this.checked); });
+  r.appendChild(c); r.appendChild(el("span",null,etichetta));
+  return r;
+}
+document.addEventListener("click",function(e){
+  var th=e.target.closest("th.filtrabile");
+  if(th){ apriPop(th, th.dataset.col); return; }
+  if(!e.target.closest("#colPop")) chiudiPop();
+});
+function renderMovimenti(){
+  renderMonthStrip();
+  $("viewTitle").textContent = "Movimenti — "+MESI[month]+" "+year;
+
+  /* segnalo quali colonne stanno filtrando */
+  var attivi=filtriAttivi();
+  [].forEach.call(document.querySelectorAll("th.filtrabile"),function(th){
+    th.classList.toggle("attivo", attivi.indexOf(th.dataset.col)>=0);
+  });
+  $("btnResetF").style.display = (attivi.length || $("q").value.trim()) ? "" : "none";
+
+  var all=txOf(year,month);
+  var inc=sumBy(all,"Entrata"), out=sumBy(all,"Uscita"), net=inc-out;
+  var sup=all.filter(t=>t.tipo==="Uscita"&&t.necessita==="Superflua").reduce((a,t)=>a+(+t.importo||0),0);
+  $("mIn").textContent=money(inc);
+  $("mInN").textContent=all.filter(t=>t.tipo==="Entrata").length+" voci";
+  $("mOut").textContent=money(out);
+  $("mOutN").textContent=all.filter(t=>t.tipo==="Uscita").length+" voci";
+  $("mNet").textContent=money(net);
+  $("mNet").className="v "+(net>=0?"pos":"neg");
+  $("mRate").textContent = inc>0 ? "risparmiato "+pct(net/inc*100) : "nessuna entrata registrata";
+  $("mSup").textContent=money(sup);
+  $("mSupN").textContent = out>0 ? pct(sup/out*100)+" delle uscite" : "—";
+
+  renderIncomplete();
+  renderPiano();
+
+  var rows=currentFiltered(), body=$("txBody"), foot=$("txFoot");
+  body.innerHTML=""; foot.innerHTML="";
+
+  if(!rows.length){
+    var tr=el("tr"), td=el("td"); td.colSpan=8;
+    td.innerHTML='<div class="empty"><strong>Nessuna voce per '+MESI[month]+' '+year+'</strong>Aggiungi la prima voce, oppure importa il file generato dallo script.</div>';
+    tr.appendChild(td); body.appendChild(tr); return;
+  }
+
+  rows.forEach(function(t){
+    var tr=el("tr");
+    tr.appendChild(cella("Data","testata",dmy(t.data)));
+
+    var imp=cella("Importo","num testata "+(t.tipo==="Entrata"?"pos":t.tipo==="Giroconto"?"dim":"neg"));
+    imp.textContent=(t.tipo==="Entrata"?"+":t.tipo==="Giroconto"?"":"−")+money(Math.abs(+t.importo||0)).replace("€","")+"€";
+    tr.appendChild(imp);
+
+    var argC=cella("Argomento");
+    if(t.tipo==="Giroconto") argC.textContent="Giroconto";
+    else if(t.argomento) argC.textContent=t.argomento;
+    else { argC.className="da-compilare"; argC.textContent="da compilare"; }
+    tr.appendChild(argC);
+
+    var dt=cella("Dettaglio");
+    if(t.dettaglio){
+      dt.appendChild(document.createTextNode(t.dettaglio));
+    } else if(t.originale){
+      var g=el("span","originale", t.originale);
+      g.title="Testo dell'estratto conto: apri la voce e scrivi una descrizione tua";
+      dt.appendChild(g);
+    } else {
+      dt.appendChild(el("span","da-compilare","da compilare"));
+    }
+    if(t.auto){
+      var au=el("span","tag","auto");
+      au.style.marginLeft="7px"; au.title="Generata dal piano di allocazione";
+      dt.appendChild(au);
+    }
+    tr.appendChild(dt);
+
+    var pc=cella("Portafoglio");
+    if(t.tipo==="Giroconto" && t.portafoglioDest){
+      pc.appendChild(document.createTextNode(esc(t.portafoglio)+" "));
+      var fr0=el("span","dim"); fr0.textContent="→ "; pc.appendChild(fr0);
+      pc.appendChild(document.createTextNode(esc(t.portafoglioDest)));
+    } else if(t.tipo==="Giroconto" && !t.portafoglio){
+      pc.className="dim"; pc.textContent="—";
+    } else {
+      pc.textContent=esc(t.portafoglio)||"—";
+    }
+    tr.appendChild(pc);
+
+    var al=cella("Allocazione");
+    if(t.tipo==="Giroconto"){
+      var da=fondoOrigine(t), a=fondoDi(t);
+      if(da===a){
+        al.className="dim"; al.textContent="tra conti";
+        al.title="Spostamento di denaro senza effetto sui fondi";
+      } else {
+        var d1=el("span","dot"); d1.style.background=coloreFondo(da);
+        al.appendChild(d1); al.appendChild(document.createTextNode(da+" "));
+        var fr=el("span","dim"); fr.textContent="→ "; al.appendChild(fr);
+        var d2=el("span","dot"); d2.style.background=coloreFondo(a);
+        al.appendChild(d2); al.appendChild(document.createTextNode(a));
+      }
+    } else {
+      var f=fondoDi(t);
+      var d=el("span","dot"); d.style.background=coloreFondo(f);
+      al.appendChild(d);
+      var nome=el("span", t.allocazione?"":"dim"); nome.textContent=f;
+      if(!t.allocazione) nome.title="Nessun fondo indicato: si usa "+FONDO_BASE;
+      al.appendChild(nome);
+    }
+    tr.appendChild(al);
+
+    var nc=cella("Necessità");
+    if(t.necessita && t.necessita!=="—") nc.appendChild(el("span","tag "+classeNecessita(t.necessita),t.necessita));
+    else if(t.tipo==="Uscita" && !t.necessita) nc.appendChild(el("span","da-compilare","da compilare"));
+    else { nc.className="vuoto"; nc.textContent="—"; }
+    tr.appendChild(nc);
+
+    var tools=cella("","azioni"), wrap=el("div","row-tools");
+    var e1=el("button","btn sm","Modifica"); e1.addEventListener("click",function(){ openTx(t.id); });
+    var e2=el("button","btn sm danger","Elimina");
+    e2.addEventListener("click",function(){
+      if(!confirm("Eliminare «"+(t.dettaglio||t.argomento||"questa voce")+"»?")) return;
+      S.transactions=tx().filter(function(x){ return x.id!==t.id; });
+      save(); renderMovimenti(); toast("Voce eliminata");
+    });
+    wrap.appendChild(e1); wrap.appendChild(e2); tools.appendChild(wrap); tr.appendChild(tools);
+    body.appendChild(tr);
+  });
+
+  var fin=sumBy(rows,"Entrata"), fout=sumBy(rows,"Uscita");
+  var ftr=el("tr");
+  ftr.appendChild(el("td",null,"Totale ("+rows.length+")"));
+  var fnet=el("td","num "+(fin-fout>=0?"pos":"neg"),money(fin-fout));
+  ftr.appendChild(fnet);
+  var rest=el("td"); rest.colSpan=6;
+  rest.innerHTML='<span class="pos" style="font-family:var(--mono)">'+money(fin)+' in entrata</span> <span class="dim">·</span> <span class="neg" style="font-family:var(--mono)">'+money(fout)+' in uscita</span>';
+  ftr.appendChild(rest); foot.appendChild(ftr);
+}
+$("q").addEventListener("input",renderMovimenti);
+$("btnResetF").addEventListener("click",azzeraFiltri);
+
+/* ── Modale movimento ── */
+function aggiornaFormTipo(){
+  var g = formTipo==="Giroconto";
+  $("wOrig").style.display = g ? "" : "none";
+  $("wNec").style.display = g ? "none" : "";
+  $("wArg").style.display = g ? "none" : "";
+  $("wPort").style.display = g ? "none" : "";
+  $("lblAlloc").textContent = g ? "Versa nel fondo"
+    : formTipo==="Entrata" ? "Accredita sul fondo" : "Attingi dal fondo";
+  var nota=$("notaAlloc"), f=$("fAllocM").value||FONDO_BASE;
+  var bal=bucketBalances();
+  if(g){
+    nota.innerHTML='<p class="hint" style="margin:0">Sposta denaro tra due fondi: il patrimonio non cambia, cambia solo come lo hai suddiviso. Non compare tra le entrate né tra le uscite del mese.</p>';
+  } else if(formTipo==="Uscita"){
+    nota.innerHTML='<p class="hint" style="margin:0">L\u0027importo viene sottratto da <b>'+esc(f)+'</b>, che ora contiene '+money(bal[f]||0)+'. Lasciando il campo vuoto si attinge da '+FONDO_BASE+'.</p>';
+  } else {
+    nota.innerHTML='<p class="hint" style="margin:0">L\u0027importo viene aggiunto a <b>'+esc(f)+'</b>. Lasciando il campo vuoto confluisce in '+FONDO_BASE+'.</p>';
+  }
+}
+
+function openTx(id){
+  editingId=id||null;
+  var t = id ? tx().find(function(x){return x.id===id;}) : null;
+  $("txTitle").textContent = t ? "Modifica voce" : "Nuova voce";
+  formTipo = t ? t.tipo : "Uscita";
+  [].forEach.call(document.querySelectorAll("#tipoSeg button"),function(b){ b.classList.toggle("on", b.dataset.tipo===formTipo); });
+  fillSelect($("fArg"), S.config.argomenti, "—", t?t.argomento:"");
+  fillSelect($("fPortM"), S.config.portafogli, "—", t?t.portafoglio:S.config.portafogli[0]);
+  fillSelect($("fAllocM"), S.config.allocazioni, "— "+FONDO_BASE, t?(t.allocazione||""):"");
+  fillSelect($("fOrig"), S.config.allocazioni, null, t?fondoOrigine(t):FONDO_BASE);
+  var nec=S.config.necessita.slice();
+  fillSelect($("fNec"), nec, null, null);
+  var onA=document.createElement("option"); onA.value="—"; onA.textContent="Non applicabile";
+  $("fNec").appendChild(onA);
+  $("fData").value = t ? t.data : ymd(new Date(year, month, Math.min(new Date().getDate(), new Date(year,month+1,0).getDate())));
+  $("fImporto").value = t ? Math.abs(+t.importo||0) : "";
+  $("fDett").value = t ? (t.dettaglio||"") : "";
+  $("fNec").value = t ? (t.necessita||"—") : (S.config.necessita[0]||"—");
+  aggiornaFormTipo();
+  $("txMask").classList.add("on");
+  setTimeout(function(){ $("fImporto").focus(); },40);
+}
+function closeTx(){ $("txMask").classList.remove("on"); editingId=null; }
+$("btnNew").addEventListener("click",function(){ openTx(null); });
+$("txCancel").addEventListener("click",closeTx);
+$("txMask").addEventListener("click",function(e){ if(e.target===this) closeTx(); });
+document.getElementById("tipoSeg").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-tipo]"); if(!b) return;
+  formTipo=b.dataset.tipo;
+  [].forEach.call(this.querySelectorAll("button"),function(x){ x.classList.toggle("on",x===b); });
+  if(formTipo!=="Uscita") $("fNec").value="—";
+  aggiornaFormTipo();
+});
+$("fAllocM").addEventListener("change",aggiornaFormTipo);
+$("txSave").addEventListener("click",function(){
+  var imp=parseFloat($("fImporto").value);
+  if(!$("fData").value){ toast("Manca la data"); return; }
+  if(!(imp>0)){ toast("Inserisci un importo maggiore di zero"); return; }
+  var alloc=$("fAllocM").value;
+  if(formTipo==="Giroconto"){
+    var da=$("fOrig").value, a=alloc||FONDO_BASE;
+    if(da===a){ toast("Origine e destinazione coincidono"); return; }
+  }
+  var rec={
+    id: editingId || uid(),
+    data:$("fData").value,
+    tipo:formTipo,
+    importo:Math.abs(imp),
+    argomento: formTipo==="Giroconto" ? "Risparmio" : $("fArg").value,
+    dettaglio:$("fDett").value.trim(),
+    portafoglio: formTipo==="Giroconto" ? "" : $("fPortM").value,
+    allocazione: alloc,
+    necessita: formTipo==="Uscita" ? $("fNec").value : "—"
+  };
+  if(formTipo==="Giroconto") rec.origine=$("fOrig").value;
+  if(editingId){
+    var vecchio=tx().find(function(t){ return t.id===editingId; });
+    if(vecchio){
+      if(vecchio.auto) rec.auto=vecchio.auto;
+      if(vecchio.portafoglioDest) rec.portafoglioDest=vecchio.portafoglioDest;
+      /* il testo dell'estratto resta come promemoria finché il dettaglio è vuoto */
+      if(vecchio.originale){
+        rec.originale=vecchio.originale;
+        if(rec.dettaglio) rec.imparato=true;
+      }
+    }
+    S.transactions = tx().map(function(t){ return t.id===editingId ? rec : t; });
+  } else {
+    S.transactions.push(rec);
+  }
+  var p=rec.data.split("-"); year=+p[0]; month=+p[1]-1;
+  save(); closeTx(); renderAll(); toast(editingId?"Voce aggiornata":"Voce aggiunta");
+});
+
+/* ═══════════════════════════════════════════════
+   Allocazione automatica dalle entrate
+   ═══════════════════════════════════════════════ */
+function tagMese(y,m){ return y+"-"+String(m+1).padStart(2,"0"); }
+
+/* un "valore" tiene sempre entrambe le cifre: si cambia unità senza perderle */
+function valoreVuoto(modo){
+  return {modo: modo||"percentuale", percentuale:0, importo:0};
+}
+function valoreCifra(v){
+  if(!v) return 0;
+  return v.modo==="percentuale" ? (Number(v.percentuale)||0) : (Number(v.importo)||0);
+}
+function valoreEuro(v, entrate){
+  if(!v) return 0;
+  var x = v.modo==="percentuale"
+    ? entrate*(Number(v.percentuale)||0)/100
+    : (Number(v.importo)||0);
+  return Math.round(x*100)/100;
+}
+function valoreTesto(v){
+  if(!v) return "—";
+  return v.modo==="percentuale"
+    ? (Number(v.percentuale)||0).toLocaleString("it-IT")+"% delle entrate"
+    : money(Number(v.importo)||0)+" fissi";
+}
+
+/* scaglione applicabile: quello con la soglia più alta raggiunta dalle entrate */
+function scaglioniOrdinati(r){
+  return (r.scaglioni||[]).slice().sort(function(a,b){ return (Number(a.da)||0)-(Number(b.da)||0); });
+}
+function scaglioneAttivo(r, entrate){
+  var sc=scaglioniOrdinati(r), trovato=null;
+  sc.forEach(function(s){ if(entrate >= (Number(s.da)||0)) trovato=s; });
+  return trovato;
+}
+function richiestoDi(r, entrate){
+  if(r.tipo==="scaglioni"){
+    var s=scaglioneAttivo(r, entrate);
+    return s ? valoreEuro(s.valore, entrate) : 0;
+  }
+  return valoreEuro(r.valore, entrate);
+}
+function descrizioneRegola(r, entrate){
+  if(r.tipo!=="scaglioni") return valoreTesto(r.valore);
+  var sc=scaglioniOrdinati(r);
+  if(!sc.length) return "nessuno scaglione impostato";
+  var attivo=scaglioneAttivo(r, entrate);
+  if(!attivo) return "sotto la prima soglia ("+money(sc[0].da)+")";
+  var i=sc.indexOf(attivo);
+  var fino = i<sc.length-1 ? " – "+money(Number(sc[i+1].da)-0.01) : " e oltre";
+  return "entrate da "+money(attivo.da)+fino+" → "+valoreTesto(attivo.valore);
+}
+
+function calcolaPiano(y,m){
+  var list=txOf(y,m);
+  var entrate=sumBy(list,"Entrata");
+  var regole=(S.config.regole||[]).filter(function(r){ return r.attiva!==false; });
+  var disponibile=entrate, righe=[];
+  regole.forEach(function(r){
+    var chiuso = statoFondo(r.fondo)==="concluso";
+    var richiesto = chiuso ? 0 : Math.round(richiestoDi(r, entrate)*100)/100;
+    var assegnato=Math.max(0, Math.min(richiesto, disponibile));
+    assegnato=Math.round(assegnato*100)/100;
+    disponibile=Math.round((disponibile-assegnato)*100)/100;
+    righe.push({regola:r, richiesto:richiesto, assegnato:assegnato, chiuso:chiuso,
+                descrizione: chiuso ? "fondo concluso: regola sospesa" : descrizioneRegola(r, entrate),
+                parziale: assegnato < richiesto - 0.005});
+  });
+  return {entrate:entrate, righe:righe, residuo:disponibile,
+          allocato:Math.round((entrate-disponibile)*100)/100};
+}
+
+function versamentiAuto(y,m){
+  var t=tagMese(y,m);
+  return tx().filter(function(x){ return x.auto===t; });
+}
+
+function generaVersamenti(y,m){
+  var piano=calcolaPiano(y,m);
+  var attivi=piano.righe.filter(function(r){ return r.assegnato>0; });
+  if(!attivi.length){ toast("Nessun importo da spostare: mancano entrate o regole"); return; }
+  var t=tagMese(y,m);
+  S.transactions = tx().filter(function(x){ return x.auto!==t; });
+  var ultimoGiorno=new Date(y,m+1,0);
+  var oggi=new Date();
+  var data = ymd(oggi < ultimoGiorno && oggi.getFullYear()===y && oggi.getMonth()===m ? oggi : ultimoGiorno);
+  attivi.forEach(function(r){
+    S.transactions.push({
+      id:uid(), data:data, tipo:"Giroconto", importo:r.assegnato,
+      argomento:"Risparmio",
+      dettaglio:"Allocazione automatica · "+r.regola.fondo,
+      portafoglio:"", origine:FONDO_BASE, allocazione:r.regola.fondo,
+      necessita:"—", auto:t
+    });
+  });
+  save(); renderMovimenti();
+  toast(attivi.length+" giroconti generati per "+MESI[m]);
+}
+
+function rimuoviVersamenti(y,m){
+  var t=tagMese(y,m), n=versamentiAuto(y,m).length;
+  if(!n){ toast("Nessun giroconto generato in questo mese"); return; }
+  S.transactions = tx().filter(function(x){ return x.auto!==t; });
+  save(); renderMovimenti(); toast(n+" giroconti rimossi");
+}
+
+function vociIncomplete(y,m){
+  return txOf(y,m).filter(function(t){
+    if(t.tipo==="Giroconto") return false;
+    return !t.argomento || !t.dettaglio || (t.tipo==="Uscita" && !t.necessita);
+  });
+}
+function renderIncomplete(){
+  var lista=vociIncomplete(year,month);
+  var card=$("incompleteCard"), box=$("incompleteBox");
+  if(!lista.length){ card.style.display="none"; return; }
+  card.style.display="";
+  box.innerHTML="";
+
+  var mancanti={argomento:0, dettaglio:0, necessita:0};
+  lista.forEach(function(t){
+    if(!t.argomento) mancanti.argomento++;
+    if(!t.dettaglio) mancanti.dettaglio++;
+    if(t.tipo==="Uscita" && !t.necessita) mancanti.necessita++;
+  });
+  var pezzi=[];
+  if(mancanti.argomento) pezzi.push(mancanti.argomento+" senza argomento");
+  if(mancanti.dettaglio) pezzi.push(mancanti.dettaglio+" senza dettaglio");
+  if(mancanti.necessita) pezzi.push(mancanti.necessita+" senza necessità");
+
+  var p=el("p","hint");
+  p.style.margin="0 0 12px";
+  p.innerHTML="<b>"+lista.length+" voc"+(lista.length===1?"e":"i")+"</b> importate senza classificazione ("+
+    pezzi.join(", ")+"). Sono quelle su cui lo script non era sicuro: il testo grigio è la descrizione dell\u0027estratto conto.";
+  box.appendChild(p);
+
+  var tw=el("div","tw");
+  var t2=el("table");
+  t2.innerHTML='<thead><tr><th style="width:100px">Data</th><th class="num" style="width:110px">Importo</th><th>Dall\u0027estratto conto</th><th style="width:110px"></th></tr></thead>';
+  var tb=el("tbody");
+  lista.slice(0,12).forEach(function(t){
+    var tr=el("tr");
+    tr.appendChild(el("td",null,dmy(t.data)));
+    tr.appendChild(el("td","num "+(t.tipo==="Entrata"?"pos":"neg"),
+      (t.tipo==="Entrata"?"+":"−")+money(t.importo)));
+    var d=el("td");
+    d.appendChild(el("span","originale", t.originale || t.dettaglio || "—"));
+    tr.appendChild(d);
+    var az=el("td"), w=el("div","row-tools");
+    var b=el("button","btn sm","Completa");
+    b.addEventListener("click",function(){ openTx(t.id); });
+    w.appendChild(b); az.appendChild(w); tr.appendChild(az);
+    tb.appendChild(tr);
+  });
+  t2.appendChild(tb); tw.appendChild(t2); box.appendChild(tw);
+  if(lista.length>12){
+    box.appendChild(el("p","hint","…e altre "+(lista.length-12)+
+      ". Nell\u0027elenco qui sotto le riconosci dalla scritta «da compilare»."));
+  }
+}
+
+function renderPiano(){
+  $("planMese").textContent = MESI[month]+" "+year;
+  var box=$("planBox"); box.innerHTML="";
+  var regole=(S.config.regole||[]).filter(function(r){ return r.attiva!==false; });
+
+  if(!regole.length){
+    box.innerHTML='<div class="empty"><strong>Nessuna regola attiva</strong>'+
+      'In Impostazioni puoi decidere quanto di ogni entrata mettere da parte — per esempio il 10% su Trading e 750 € su Casa.</div>';
+    return;
+  }
+
+  var p=calcolaPiano(year,month);
+  var esistenti=versamentiAuto(year,month);
+
+  var tw=el("div","tw");
+  var t=el("table");
+  t.innerHTML='<thead><tr><th>Fondo</th><th>Regola</th><th class="num">Previsto</th><th class="num">Assegnato</th><th></th></tr></thead>';
+  var tb=el("tbody");
+  p.righe.forEach(function(r){
+    var tr=el("tr");
+    var nm=el("td");
+    var d=el("span","dot"); d.style.background=coloreFondo(r.regola.fondo);
+    nm.appendChild(d); nm.appendChild(document.createTextNode(r.regola.fondo));
+    tr.appendChild(nm);
+    tr.appendChild(el("td","dim", r.descrizione));
+    tr.appendChild(el("td","num dim",money(r.richiesto)));
+    tr.appendChild(el("td","num "+(r.assegnato>0?"pos":"dim"),money(r.assegnato)));
+    var st=el("td");
+    if(r.chiuso) st.appendChild(el("span","tag","fondo concluso"));
+    else if(r.assegnato<=0) st.appendChild(el("span","tag","non coperta"));
+    else if(r.parziale) st.appendChild(el("span","tag n2","parziale"));
+    else st.appendChild(el("span","tag n0","coperta"));
+    tr.appendChild(st);
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+  var tf=el("tfoot"), ftr=el("tr");
+  ftr.appendChild(el("td",null,"Entrate del mese"));
+  ftr.appendChild(el("td","num pos",money(p.entrate)));
+  ftr.appendChild(el("td",null,"Allocato"));
+  ftr.appendChild(el("td","num",money(p.allocato)));
+  ftr.appendChild(el("td","num "+(p.residuo>=0?"dim":"neg"),"libero "+money(p.residuo)));
+  tf.appendChild(ftr); t.appendChild(tf);
+  tw.appendChild(t); box.appendChild(tw);
+
+  var bar=el("div"); bar.style.cssText="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap;align-items:center";
+  var gen=el("button","btn primary", esistenti.length?"Rigenera i giroconti":"Genera i giroconti");
+  gen.addEventListener("click",function(){
+    if(esistenti.length && !confirm("Sostituisco i "+esistenti.length+" giroconti già generati per "+MESI[month]+"?")) return;
+    generaVersamenti(year,month);
+  });
+  bar.appendChild(gen);
+  if(esistenti.length){
+    var rm=el("button","btn danger","Rimuovi i generati");
+    rm.addEventListener("click",function(){ rimuoviVersamenti(year,month); });
+    bar.appendChild(rm);
+    var nota=el("span","dim");
+    nota.style.fontSize="12.5px";
+    nota.textContent=esistenti.length+" giroconti già in elenco, contrassegnati «auto»";
+    bar.appendChild(nota);
+  }
+  box.appendChild(bar);
+  if(p.entrate<=0){
+    box.appendChild(el("p","hint","Nessuna entrata registrata in "+MESI[month]+": il piano resta a zero finché non ne inserisci una."));
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   I · Riepilogo
+   ═══════════════════════════════════════════════ */
+function monthlyTotals(y){
+  var out=[];
+  for(var m=0;m<12;m++){
+    var l=txOf(y,m), i=sumBy(l,"Entrata"), o=sumBy(l,"Uscita");
+    out.push({m:m,inc:i,out:o,net:i-o,n:l.length});
+  }
+  return out;
+}
+var FONDO_BASE = "Non allocato";
+
+/* I fondi sono una partizione del liquido. Ogni movimento tocca un fondo:
+   - Uscita   → sottrae dal fondo indicato (o da Non allocato se vuoto)
+   - Entrata  → aggiunge al fondo indicato (o a Non allocato se vuoto)
+   - Giroconto→ sposta da un fondo all'altro senza toccare il patrimonio */
+function fondoDi(t){
+  var a=t.allocazione;
+  return (a && S.config.allocazioni.indexOf(a)>=0) ? a : FONDO_BASE;
+}
+function fondoOrigine(t){
+  var o=t.origine;
+  return (o && S.config.allocazioni.indexOf(o)>=0) ? o : FONDO_BASE;
+}
+function bucketBalances(){
+  var b={};
+  S.config.allocazioni.forEach(function(a){ b[a]=Number(S.config.saldiIniziali[a])||0; });
+  tx().forEach(function(t){
+    var imp=Number(t.importo)||0;
+    if(t.tipo==="Giroconto"){
+      var da=fondoOrigine(t), a=fondoDi(t);
+      if(da===a) return;
+      if(da in b) b[da]-=imp;
+      if(a in b) b[a]+=imp;
+      return;
+    }
+    var f=fondoDi(t);
+    if(!(f in b)) return;
+    b[f] += (t.tipo==="Entrata" ? 1 : -1) * imp;
+  });
+  Object.keys(b).forEach(function(k){ b[k]=Math.round(b[k]*100)/100; });
+  return b;
+}
+function renderRiepilogo(){
+  $("viewTitle").textContent="Riepilogo "+year;
+  $("yLabel").textContent=year;
+  var rows=monthlyTotals(year);
+  var ti=rows.reduce((a,r)=>a+r.inc,0), to=rows.reduce((a,r)=>a+r.out,0), tn=ti-to;
+  $("yIn").textContent=money(ti);
+  $("yOut").textContent=money(to);
+  $("yNet").textContent=money(tn); $("yNet").className="v "+(tn>=0?"pos":"neg");
+  $("yRate").textContent = ti>0 ? pct(tn/ti*100) : "—";
+
+  /* tabella mesi */
+  var b=$("sumBody"); b.innerHTML="";
+  rows.forEach(function(r){
+    var tr=el("tr");
+    var mn=cella("Mese","testata"); mn.innerHTML='<a href="#" data-m="'+r.m+'" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--line)">'+MESI[r.m]+'</a>';
+    tr.appendChild(mn);
+    tr.appendChild(cella("Entrate","num "+(r.inc?"pos":"dim"), r.inc?money(r.inc):"—"));
+    tr.appendChild(cella("Uscite","num "+(r.out?"neg":"dim"), r.out?money(r.out):"—"));
+    tr.appendChild(cella("Saldo","num "+(r.n?(r.net>=0?"pos":"neg"):"dim"), r.n?money(r.net):"—"));
+    tr.appendChild(cella("Risparmio","num dim", r.inc>0?pct(r.net/r.inc*100):"—"));
+    tr.appendChild(cella("Voci","num dim", r.n||"—"));
+    b.appendChild(tr);
+  });
+  if(!b.dataset.bound){
+    b.dataset.bound="1";
+    b.addEventListener("click",function(e){
+      var a=e.target.closest("a[data-m]"); if(!a) return;
+      e.preventDefault(); month=+a.dataset.m;
+      document.querySelector('.nav button[data-view="movimenti"]').click();
+    });
+  }
+  var f=$("sumFoot"); f.innerHTML="";
+  var ftr=el("tr");
+  ftr.appendChild(el("td",null,"Totale "+year));
+  ftr.appendChild(el("td","num pos",money(ti)));
+  ftr.appendChild(el("td","num neg",money(to)));
+  ftr.appendChild(el("td","num "+(tn>=0?"pos":"neg"),money(tn)));
+  ftr.appendChild(el("td","num", ti>0?pct(tn/ti*100):"—"));
+  ftr.appendChild(el("td","num", rows.reduce((a,r)=>a+r.n,0)));
+  f.appendChild(ftr);
+
+  drawChart(rows);
+  renderRibbon();
+  renderCategorie();
+}
+
+function drawChart(rows){
+  var svg=$("chart");
+  var W=1000,H=210,padL=6,padR=6,padT=14,padB=26;
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  var max=Math.max(1,...rows.map(r=>Math.max(r.inc,r.out)));
+  var innerH=H-padT-padB, innerW=W-padL-padR;
+  var slot=innerW/12, bw=Math.min(16,slot/3.4);
+  var out=[];
+  /* griglia */
+  for(var g=0; g<=3; g++){
+    var y=padT+innerH*(g/3);
+    out.push('<line class="gl" x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'"/>');
+    var val=max*(1-g/3);
+    out.push('<text class="lbl" x="'+(padL+3)+'" y="'+(y-4)+'">'+eur0.format(val)+'</text>');
+  }
+  rows.forEach(function(r,i){
+    var cx=padL+slot*i+slot/2;
+    var hi=r.inc/max*innerH, ho=r.out/max*innerH;
+    out.push('<rect x="'+(cx-bw-2)+'" y="'+(padT+innerH-hi)+'" width="'+bw+'" height="'+Math.max(hi,r.inc?1.5:0)+'" fill="var(--in)" rx="1"/>');
+    out.push('<rect x="'+(cx+2)+'" y="'+(padT+innerH-ho)+'" width="'+bw+'" height="'+Math.max(ho,r.out?1.5:0)+'" fill="var(--out)" rx="1"/>');
+    out.push('<text class="lbl" x="'+cx+'" y="'+(H-9)+'" text-anchor="middle">'+MESI_S[i]+'</text>');
+  });
+  out.push('<line class="gl" x1="'+padL+'" y1="'+(padT+innerH)+'" x2="'+(W-padR)+'" y2="'+(padT+innerH)+'" stroke="var(--line)"/>');
+  svg.innerHTML=out.join("");
+}
+
+/* Stati di un fondo:
+   ""           attivo — sta ancora accumulando
+   "completato" obiettivo raggiunto, il denaro è ancora lì (resta tra gli attivi)
+   "concluso"   ha svolto il suo scopo e il denaro è stato speso (va in fondo) */
+function statoFondo(k){
+  var s=S.config.statoFondi[k];
+  return (s==="completato"||s==="concluso") ? s : "";
+}
+function impostaStato(k, stato){
+  if(stato) S.config.statoFondi[k]=stato;
+  else delete S.config.statoFondi[k];
+  save(); renderRiepilogo();
+  toast(stato==="completato" ? "«"+k+"» segnato come completato"
+      : stato==="concluso" ? "«"+k+"» archiviato: ha svolto il suo scopo"
+      : "«"+k+"» di nuovo attivo");
+}
+function fondiOrdinati(){
+  var att=[], con=[];
+  S.config.allocazioni.forEach(function(k){
+    (statoFondo(k)==="concluso" ? con : att).push(k);
+  });
+  return att.concat(con);
+}
+
+function renderRibbon(){
+  var bal=bucketBalances();
+  var keys=fondiOrdinati();
+  /* il nastro rappresenta i fondi ancora in gioco: i conclusi sono storia */
+  var vivi=keys.filter(function(k){ return statoFondo(k)!=="concluso"; });
+  var tot=keys.reduce(function(a,k){ return a+Math.max(0,bal[k]); },0);
+  var totObj=vivi.reduce(function(a,k){ return a+(Number(S.config.obiettivi[k])||0); },0);
+
+  /* larghezza del segmento = obiettivo del fondo; senza obiettivi si usa il saldo */
+  var base={}, baseTot=0;
+  vivi.forEach(function(k){
+    var o=Number(S.config.obiettivi[k])||0;
+    base[k] = totObj>0 ? Math.max(o, Math.max(0,bal[k])) : Math.max(0,bal[k]);
+    baseTot += base[k];
+  });
+
+  var bar=$("ribbon"); bar.innerHTML="";
+  if(baseTot<=0){
+    bar.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12.5px">Nessun fondo attivo — imposta un obiettivo o alloca la prima entrata</div>';
+  } else {
+    vivi.forEach(function(k){
+      if(base[k]<=0) return;
+      var saldo=Math.max(0,bal[k]);
+      var obj=Number(S.config.obiettivi[k])||0;
+      var quota = obj>0 ? Math.min(1, saldo/base[k]) : 1;
+      var col = coloreFondo(k);
+      var seg=el("div","ribbon-seg");
+      seg.style.flex=(base[k]/baseTot*100)+" 1 0";
+      seg.style.setProperty("--c",col);
+      seg.title = k+" · "+money(saldo)+(obj>0 ? " di "+money(obj)+" ("+pct(saldo/obj*100)+")" : "");
+      var fill=el("div","ribbon-fill");
+      fill.style.width=(quota*100)+"%";
+      seg.appendChild(fill);
+      if(base[k]/baseTot > 0.08){
+        var lab=el("span","pct", obj>0 ? Math.round(saldo/obj*100)+"%" : eur0.format(saldo));
+        if(quota < 0.55) lab.classList.add("out");
+        seg.appendChild(lab);
+      }
+      bar.appendChild(seg);
+    });
+  }
+
+  var nt=$("notches"); nt.innerHTML="";
+  if(totObj>0){
+    var riep=el("div","ribbon-caption");
+    riep.innerHTML='<span>'+money(tot)+' accantonati</span><span>obiettivo complessivo '+money(totObj)+' · '+pct(totObj>0?Math.min(100,tot/totObj*100):0)+'</span>';
+    nt.appendChild(riep);
+  }
+
+  var body=$("allocBody"); body.innerHTML="";
+  keys.forEach(function(k){
+    var v=bal[k]||0, share=tot>0?Math.max(0,v)/tot*100:0;
+    var obj=Number(S.config.obiettivi[k])||0;
+    var col=coloreFondo(k);
+    var st=statoFondo(k);
+    var raggiunto = obj>0 && v>=obj-0.005;
+
+    var tr=el("tr","fondo-"+(st||"attivo"));
+    var nm=cella("Fondo","testata");
+    var d=el("span","dot"); d.style.background=col;
+    nm.appendChild(d); nm.appendChild(document.createTextNode(k));
+    if(st==="completato") nm.appendChild(el("span","tag done","completato"));
+    if(st==="concluso") nm.appendChild(el("span","tag","concluso"));
+    tr.appendChild(nm);
+
+    tr.appendChild(cella("Saldo","num testata "+(v<0?"neg":""),money(v)));
+    tr.appendChild(cella("Quota","num dim",pct(share)));
+    tr.appendChild(cella("Obiettivo","num "+(obj?"":"dim"), obj?money(obj):"senza tetto"));
+
+    var pc=cella("Progresso","num");
+    var quota = obj>0 ? v/obj*100 : share;
+    pc.innerHTML='<span class="mini-bar"><span style="width:'+Math.max(0,Math.min(100,quota))+'%;background:'+col+'"></span></span>'+
+      '<span'+(obj>0?'':' class="dim"')+'>'+pct(quota)+'</span>';
+    if(!obj) pc.title="Nessun obiettivo impostato: mostra il peso di questo fondo sui risparmi totali";
+    tr.appendChild(pc);
+
+    var manca = obj>0 ? obj-v : null;
+    var mc=cella("Mancante","num");
+    if(st==="concluso"){
+      mc.className="num dim";
+      mc.textContent = Math.abs(v)<0.005 ? "esaurito" : money(v)+" residui";
+    } else if(manca==null){
+      mc.className="num dim"; mc.textContent=money(v)+" liberi";
+    } else if(manca>0){
+      mc.className="num neg"; mc.textContent=money(manca);
+    } else {
+      mc.className="num pos"; mc.textContent="raggiunto";
+    }
+    tr.appendChild(mc);
+
+    /* azioni: il passaggio di stato è sempre esplicito, mai automatico */
+    var az=cella("","azioni"), w=el("div","row-tools");
+    if(st===""){
+      if(raggiunto){
+        var b1=el("button","btn sm ok","Segna completato");
+        b1.title="Hai raggiunto l\u0027obiettivo: il denaro resta nel fondo";
+        b1.addEventListener("click",function(){ impostaStato(k,"completato"); });
+        w.appendChild(b1);
+      } else {
+        w.appendChild(el("span","dim","—"));
+      }
+    } else if(st==="completato"){
+      var b2=el("button","btn sm","Ha svolto il suo scopo");
+      b2.title="Il denaro è stato speso per la sua finalità: archivia il fondo in fondo all\u0027elenco";
+      b2.addEventListener("click",function(){
+        if(Math.abs(v)>0.005 && !confirm("«"+k+"» contiene ancora "+money(v)+".\n\nArchiviarlo comunque? Il saldo resta visibile ma il fondo passa in fondo all\u0027elenco.")) return;
+        impostaStato(k,"concluso");
+      });
+      var b3=el("button","btn sm ghost","Riapri");
+      b3.addEventListener("click",function(){ impostaStato(k,""); });
+      w.appendChild(b2); w.appendChild(b3);
+    } else {
+      var b4=el("button","btn sm ghost","Riapri");
+      b4.title="Rimetti il fondo tra quelli attivi";
+      b4.addEventListener("click",function(){ impostaStato(k,""); });
+      w.appendChild(b4);
+    }
+    az.appendChild(w); tr.appendChild(az);
+    body.appendChild(tr);
+  });
+
+  var f=$("allocFoot"); f.innerHTML="";
+  var totVivi=Math.round(vivi.reduce(function(a,k){ return a+(bal[k]||0); },0)*100)/100;
+  var ftr=el("tr");
+  ftr.appendChild(el("td",null, vivi.length===keys.length ? "Totale" : "Totale fondi attivi"));
+  ftr.appendChild(el("td","num",money(totVivi)));
+  ftr.appendChild(el("td","num","")); 
+  ftr.appendChild(el("td","num", totObj?money(totObj):"—"));
+  ftr.appendChild(el("td","num", totObj?pct(totVivi/totObj*100):"—"));
+  ftr.appendChild(el("td","num "+(totObj-totVivi>0?"neg":"pos"), totObj?(totObj-totVivi>0?money(totObj-totVivi):"raggiunto"):"—"));
+  ftr.appendChild(el("td"));
+  f.appendChild(ftr);
+
+  /* quadratura: la somma dei fondi deve corrispondere al liquido disponibile */
+  var iniziali=S.config.allocazioni.reduce(function(a,k){ return a+(Number(S.config.saldiIniziali[k])||0); },0);
+  var tutte=tx();
+  var entrateTot=tutte.reduce(function(a,t){ return a+(t.tipo==="Entrata"?(Number(t.importo)||0):0); },0);
+  var usciteTot=tutte.reduce(function(a,t){ return a+(t.tipo==="Uscita"?(Number(t.importo)||0):0); },0);
+  var liquido=Math.round((iniziali+entrateTot-usciteTot)*100)/100;
+  var sommaFondi=Math.round(S.config.allocazioni.reduce(function(a,k){ return a+(bal[k]||0); },0)*100)/100;
+  var q=$("quadratura");
+  var scarto=Math.round((sommaFondi-liquido)*100)/100;
+  q.innerHTML = Math.abs(scarto)<0.01
+    ? '<span class="ok">✓</span> I fondi sommano a '+money(sommaFondi)+', quanto il liquido disponibile ('+money(iniziali)+' iniziali '+(entrateTot?"+ "+money(entrateTot)+" di entrate ":"")+(usciteTot?"− "+money(usciteTot)+" di uscite":"")+').'
+    : '<span class="ko">!</span> I fondi sommano a '+money(sommaFondi)+' ma il liquido calcolato è '+money(liquido)+': scarto di '+money(scarto)+'.';
+  q.className = "quadratura "+(Math.abs(scarto)<0.01 ? "ok" : "ko");
+}
+
+function renderCategorie(){
+  var l=txOf(year,null).filter(t=>t.tipo==="Uscita");
+  var byCat={};
+  l.forEach(function(t){ var k=t.argomento||"Senza argomento"; byCat[k]=(byCat[k]||0)+(Number(t.importo)||0); });
+  var tot=Object.keys(byCat).reduce((a,k)=>a+byCat[k],0);
+  var body=$("catBody"); body.innerHTML="";
+  var keys=Object.keys(byCat).sort(function(a,b){ return byCat[b]-byCat[a]; });
+  if(!keys.length){
+    var tr=el("tr"), td=el("td"); td.colSpan=4;
+    td.innerHTML='<div class="empty"><strong>Nessuna uscita nel '+year+'</strong>Le uscite registrate compariranno qui, ordinate per peso.</div>';
+    tr.appendChild(td); body.appendChild(tr); return;
+  }
+  var mesiAttivi=new Set(l.map(t=>t.data.slice(0,7))).size || 1;
+  keys.forEach(function(k){
+    var tr=el("tr");
+    tr.appendChild(el("td",null,k));
+    tr.appendChild(el("td","num",money(byCat[k])));
+    var q=el("td","num");
+    q.innerHTML='<span style="display:inline-block;width:'+Math.round(byCat[k]/tot*70)+'px;height:6px;background:var(--brass-dim);margin-right:8px;vertical-align:1px;border-radius:1px"></span>'+pct(byCat[k]/tot*100);
+    tr.appendChild(q);
+    tr.appendChild(el("td","num dim",money(byCat[k]/mesiAttivi)));
+    body.appendChild(tr);
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   II · Investimenti
+   ═══════════════════════════════════════════════ */
+function snapsSorted(c){ return (c.snapshots||[]).slice().sort(function(a,b){ return a.data<b.data?-1:1; }); }
+function latest(c){ var s=snapsSorted(c); return s.length?s[s.length-1]:null; }
+
+/* Il versato è registrato per singola rilevazione: il totale è la somma progressiva. */
+function versatoDi(sn){ return Number(sn && sn.versatoDelta)||0; }
+function versatoCumulato(c, finoA){
+  var s=snapsSorted(c), tot=0;
+  for(var i=0;i<s.length;i++){
+    tot += versatoDi(s[i]);
+    if(finoA && s[i].id===finoA.id) break;
+  }
+  return Math.round(tot*100)/100;
+}
+function versatoTotale(c){ return versatoCumulato(c, null); }
+
+function renderInvestimenti(){
+  $("viewTitle").textContent="Investimenti";
+  var tot=0, paid=0, prev=0, versUltimi=0, hasPrev=false;
+  S.conti.forEach(function(c){
+    var s=snapsSorted(c);
+    if(s.length){
+      tot += Number(s[s.length-1].saldo)||0;
+      paid += versatoTotale(c);
+      if(s.length>1){
+        prev += Number(s[s.length-2].saldo)||0;
+        versUltimi += versatoDi(s[s.length-1]);
+        hasPrev=true;
+      } else prev += Number(s[s.length-1].saldo)||0;
+    }
+  });
+  $("invTot").textContent=money(tot);
+  var dv=Math.round((tot-prev-versUltimi)*100)/100;
+  $("invTotD").textContent = hasPrev
+    ? (dv>=0?"+":"−")+money(Math.abs(dv))+" dall'ultima rilevazione"+(versUltimi?", netti dei versamenti":"")
+    : "prima rilevazione";
+  $("invTotD").className = "d "+(hasPrev ? (dv>=0?"pos":"neg") : "dim");
+  $("invPaid").textContent = paid ? money(paid) : "—";
+  var pl = paid ? tot-paid : null;
+  $("invPl").textContent = pl==null ? "—" : money(pl);
+  $("invPl").className = "v "+(pl==null?"dim":pl>=0?"pos":"neg");
+  $("invPlD").textContent = pl==null ? "indica i versamenti per calcolarla" : (paid? pct(pl/paid*100)+" sul capitale" : "");
+
+  var wrap=$("accounts"); wrap.innerHTML="";
+  S.conti.forEach(function(c){ wrap.appendChild(accountCard(c)); });
+}
+
+function accountCard(c){
+  var card=el("div","card");
+  var head=el("div","acct-head");
+  head.appendChild(el("h3",null,c.nome));
+  head.appendChild(el("span","badge",c.tipo||"Conto"));
+  var add=el("button","btn sm primary","Aggiungi rilevazione");
+  add.style.marginLeft="auto";
+  add.addEventListener("click",function(){ openSnap(c.id,null); });
+  head.appendChild(add);
+  card.appendChild(head);
+
+  var s=snapsSorted(c), last=s.length?s[s.length-1]:null, before=s.length>1?s[s.length-2]:null;
+
+  var stats=el("div","grid3"); stats.style.marginBottom="14px";
+  function stat(k,v,cls,d){
+    var b=el("div","stat"); b.appendChild(el("div","k",k));
+    b.appendChild(el("div","v "+(cls||""),v));
+    if(d) b.appendChild(el("div","d",d));
+    return b;
+  }
+  if(last){
+    var vers = versatoDi(last);
+    var diff = before ? Math.round((Number(last.saldo)-Number(before.saldo)-vers)*100)/100 : null;
+    var diffP = (before && Number(before.saldo)) ? diff/Number(before.saldo)*100 : null;
+    stats.appendChild(stat("Saldo attuale",money(last.saldo),"","al "+dmy(last.data)));
+    stats.appendChild(stat("Variazione", diff==null?"—":(diff>=0?"+":"−")+money(Math.abs(diff)),
+      diff==null?"dim":diff>=0?"pos":"neg",
+      diff==null ? "nessun confronto"
+        : (diffP==null?"":((diffP>=0?"+":"−")+pct(Math.abs(diffP))+" · "))+"dal "+dmy(before.data)+
+          (vers?", netta dei "+money(vers)+" versati":"")));
+    var v=versatoTotale(c);
+    var rend = v ? Number(last.saldo)-v : null;
+    stats.appendChild(stat("Rendimento totale", rend==null?"—":money(rend),
+      rend==null?"dim":rend>=0?"pos":"neg",
+      v ? "su "+money(v)+" versati · "+((rend>=0?"+":"−")+pct(Math.abs(rend/v*100))) : "nessun versamento registrato"));
+  } else {
+    stats.appendChild(stat("Saldo attuale","—","dim","nessuna rilevazione"));
+    stats.appendChild(stat("Variazione","—","dim",""));
+    stats.appendChild(stat("Rendimento","—","dim",""));
+  }
+  card.appendChild(stats);
+
+  if(s.length>1) card.appendChild(sparkline(s));
+
+  var tw=el("div","tw tw-schede");
+  var t=el("table","mob-schede");
+  t.innerHTML='<thead><tr><th style="width:104px">Data</th><th class="num">Saldo</th>'+
+    '<th class="num">Versato</th><th class="num">Versato tot.</th>'+
+    '<th class="num" title="Variazione del saldo al netto dei versamenti del periodo">Variazione \u20ac</th>'+
+    '<th class="num" title="Rendimento sul capitale presente a inizio periodo">Variazione %</th>'+
+    '<th style="width:120px">Andamento</th>'+
+    '<th>Nota</th><th style="width:112px"></th></tr></thead>';
+  var tb=el("tbody");
+  if(!s.length){
+    var tr=el("tr"), td=el("td"); td.colSpan=9;
+    td.innerHTML='<div class="empty"><strong>Nessuna rilevazione</strong>Registra il saldo di '+esc(c.nome)+' per iniziare a seguirne l\u0027andamento.</div>';
+    tr.appendChild(td); tb.appendChild(tr);
+  } else {
+    /* Variazioni sempre al netto dei versamenti: mostrano solo il movimento del mercato.
+       La base della percentuale è il capitale già presente a inizio periodo. */
+    function nettoDi(k){
+      if(k===0) return null;
+      var prec=Number(s[k-1].saldo)||0;
+      var eur=Math.round((Number(s[k].saldo)-prec-versatoDi(s[k]))*100)/100;
+      return {eur:eur, pct: prec ? eur/prec*100 : null, base:prec};
+    }
+    var maxVar=0;
+    for(var k=1;k<s.length;k++){
+      var n=nettoDi(k);
+      if(n && n.pct!=null) maxVar=Math.max(maxVar, Math.abs(n.pct));
+    }
+    if(maxVar<=0) maxVar=1;
+
+    var cum=[], acc=0;
+    s.forEach(function(sn){ acc=Math.round((acc+versatoDi(sn))*100)/100; cum.push(acc); });
+
+    /* L'anno scelto in alto resta disteso; gli altri si riducono a una riga
+       di sintesi, così la storia lunga non seppellisce il periodo che guardi. */
+    function rigaCompleta(k){
+      var sn=s[k], n=nettoDi(k), vers=versatoDi(sn);
+      var tr=el("tr");
+      tr.appendChild(cella("Data","testata",dmy(sn.data)));
+      tr.appendChild(cella("Saldo","num testata",money(sn.saldo)));
+      tr.appendChild(cella("Versato","num "+(vers?"":"vuoto dim"), vers?"+"+money(vers):"—"));
+      tr.appendChild(cella("Versato tot.","num dim", cum[k]?money(cum[k]):"—"));
+
+      var ce=cella("Variazione €","num "+(n==null?"dim":n.eur>=0?"pos":"neg"));
+      ce.textContent = n==null ? "—" : (n.eur>=0?"+":"\u2212")+money(Math.abs(n.eur));
+      if(n && vers) ce.title="Saldo cresciuto di "+money(Number(sn.saldo)-Number(s[k-1].saldo))+
+        " di cui "+money(vers)+" versati da te";
+      tr.appendChild(ce);
+
+      var cp=cella("Variazione %","num "+(n==null||n.pct==null?"dim":n.pct>=0?"pos":"neg"));
+      cp.textContent = (n==null||n.pct==null) ? "—" : (n.pct>=0?"+":"\u2212")+pct(Math.abs(n.pct));
+      if(n && n.pct!=null) cp.title="Su "+money(n.base)+" presenti a inizio periodo";
+      tr.appendChild(cp);
+
+      var an=cella("Andamento");
+      if(n==null || n.pct==null){
+        an.className="dim"; an.style.fontSize="12px";
+        an.textContent = k===0 ? "prima rilevazione" : "—";
+      } else {
+        var largh=Math.min(50, Math.abs(n.pct)/maxVar*50);
+        an.innerHTML='<span class="diverg"><span class="asse"></span>'+
+          '<span class="barra '+(n.pct>=0?"su":"giu")+'" style="width:'+largh+'%"></span></span>';
+      }
+      tr.appendChild(an);
+      var nt0=cella("Nota", sn.nota?"":"vuoto", esc(sn.nota)||"—");
+      tr.appendChild(nt0);
+
+      var tools=cella("","azioni"), w=el("div","row-tools");
+      var b1=el("button","btn sm","Modifica"); b1.addEventListener("click",function(){ openSnap(c.id,sn.id); });
+      var b2=el("button","btn sm danger","Elimina");
+      b2.addEventListener("click",function(){
+        if(!confirm("Eliminare la rilevazione del "+dmy(sn.data)+"?")) return;
+        c.snapshots=c.snapshots.filter(function(x){ return x.id!==sn.id; });
+        save(); renderInvestimenti(); toast("Rilevazione eliminata");
+      });
+      w.appendChild(b1); w.appendChild(b2); tools.appendChild(w); tr.appendChild(tools);
+      return tr;
+    }
+
+    /* Statistiche di un anno: rendimento al netto dei versamenti.
+       Il primo anno non ha un saldo precedente da cui partire, quindi la
+       percentuale si rapporta al capitale versato durante l'anno stesso. */
+    function statAnno(idx){
+      var primo=idx[0], ultimo=idx[idx.length-1];
+      var saldoFine=Number(s[ultimo].saldo)||0;
+      var vers=Math.round(idx.reduce(function(a,k){ return a+versatoDi(s[k]); },0)*100)/100;
+      var base = primo>0 ? Number(s[primo-1].saldo)||0 : 0;
+      var netto=Math.round((saldoFine-base-vers)*100)/100;
+      var rif = base>0 ? base : vers;
+      return {primo:primo, ultimo:ultimo, saldoFine:saldoFine, vers:vers, base:base,
+              netto:netto, pct: rif>0 ? netto/rif*100 : null,
+              suVersato: base<=0 && vers>0, n:idx.length};
+    }
+
+    function rigaSintesi(anno, idx){
+      var a=statAnno(idx);
+      var tr=el("tr","anno-ridotto");
+      var c1=cella("Anno","testata");
+      var b=el("button","link-anno");
+      b.innerHTML='<span class="freccia">▸</span>'+anno;
+      b.title="Mostra le "+a.n+" rilevazioni del "+anno;
+      b.addEventListener("click",function(){ year=+anno; renderAll(); });
+      c1.appendChild(b); tr.appendChild(c1);
+
+      tr.appendChild(cella("Saldo a fine anno","num testata",money(a.saldoFine)));
+      tr.appendChild(cella("Versato","num "+(a.vers?"":"vuoto dim"), a.vers?"+"+money(a.vers):"—"));
+      tr.appendChild(cella("Versato tot.","num dim", cum[a.ultimo]?money(cum[a.ultimo]):"—"));
+
+      var ce=cella("Variazione €","num "+(a.netto>=0?"pos":"neg"));
+      ce.textContent=(a.netto>=0?"+":"\u2212")+money(Math.abs(a.netto));
+      ce.title="Crescita del saldo nell\u0027anno al netto dei "+money(a.vers)+" versati";
+      tr.appendChild(ce);
+
+      var cp=cella("Variazione %","num "+(a.pct==null?"dim":a.pct>=0?"pos":"neg"));
+      cp.textContent = a.pct==null ? "—" : (a.pct>=0?"+":"\u2212")+pct(Math.abs(a.pct));
+      cp.title = a.pct==null ? "" : (a.suVersato
+        ? "Primo anno: rapportato ai "+money(a.vers)+" versati nell\u0027anno"
+        : "Su "+money(a.base)+" presenti a inizio anno");
+      if(a.suVersato) cp.appendChild(el("span","asterisco","*"));
+      tr.appendChild(cp);
+
+      var an=cella("Andamento");
+      if(a.pct==null){ an.className="dim"; an.style.fontSize="12px"; an.textContent="—"; }
+      else {
+        var largh=Math.min(50, Math.abs(a.pct)/maxAnno*50);
+        an.innerHTML='<span class="diverg"><span class="asse"></span>'+
+          '<span class="barra '+(a.pct>=0?"su":"giu")+'" style="width:'+largh+'%"></span></span>';
+      }
+      tr.appendChild(an);
+
+      var nt=cella("Nota","dim");
+      nt.textContent=a.n+" rilevazion"+(a.n===1?"e":"i");
+      tr.appendChild(nt);
+      tr.appendChild(cella("","vuoto"));
+      return tr;
+    }
+
+    /* raggruppo gli indici per anno, dal più recente */
+    var perAnno={}, ordine=[];
+    s.forEach(function(sn,k){
+      var a=sn.data.slice(0,4);
+      if(!perAnno[a]){ perAnno[a]=[]; ordine.push(a); }
+      perAnno[a].push(k);
+    });
+    /* scala comune alle barre annuali, indipendente da quella mensile */
+    var maxAnno=0;
+    ordine.forEach(function(a){
+      var st=statAnno(perAnno[a]);
+      if(st.pct!=null) maxAnno=Math.max(maxAnno, Math.abs(st.pct));
+    });
+    if(maxAnno<=0) maxAnno=1;
+    ordine.slice().reverse().forEach(function(a){
+      if(+a===+year){
+        perAnno[a].slice().reverse().forEach(function(k){ tb.appendChild(rigaCompleta(k)); });
+      } else {
+        tb.appendChild(rigaSintesi(a, perAnno[a]));
+      }
+    });
+    if(!perAnno[String(year)]){
+      var tr=el("tr"), td=el("td"); td.colSpan=9;
+      td.innerHTML='<div class="empty" style="padding:22px"><strong>Nessuna rilevazione nel '+year+'</strong>Gli altri anni sono riassunti qui sopra: clicca su un anno per aprirlo.</div>';
+      tr.appendChild(td); tb.appendChild(tr);
+    }
+  }
+  t.appendChild(tb); tw.appendChild(t); card.appendChild(tw);
+  return card;
+}
+
+function sparkline(s){
+  var svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("class","spark");
+  var W=600,H=44,p=4;
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  svg.setAttribute("preserveAspectRatio","none");
+  /* traccia il guadagno accumulato (saldo − versato), non il saldo lordo:
+     così un versamento non appare come una salita del mercato */
+  var acc=0;
+  var vals=s.map(function(x){
+    acc=Math.round((acc+versatoDi(x))*100)/100;
+    return Math.round(((Number(x.saldo)||0)-acc)*100)/100;
+  });
+  var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
+  var span=(mx-mn)||1;
+  var pts=vals.map(function(v,i){
+    var x=p+(W-2*p)*(vals.length>1? i/(vals.length-1):0.5);
+    var y=H-p-((v-mn)/span)*(H-2*p);
+    return x.toFixed(1)+","+y.toFixed(1);
+  });
+  var up = vals[vals.length-1]>=vals[0];
+  var col = up?"var(--in)":"var(--out)";
+  /* riga dello zero, se il rendimento attraversa il pari */
+  var zero = (mn<0 && mx>0) ? (H-p-((0-mn)/span)*(H-2*p)) : null;
+  svg.innerHTML =
+    (zero!=null ? '<line x1="'+p+'" y1="'+zero.toFixed(1)+'" x2="'+(W-p)+'" y2="'+zero.toFixed(1)+'" stroke="var(--line)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>' : '')+
+    '<polyline points="'+pts.join(" ")+'" fill="none" stroke="'+col+'" stroke-width="1.6" vector-effect="non-scaling-stroke"/>'+
+    '<circle cx="'+pts[pts.length-1].split(",")[0]+'" cy="'+pts[pts.length-1].split(",")[1]+'" r="2.5" fill="'+col+'"/>';
+  var box=el("div"); box.style.marginBottom="14px";
+  var cap=el("div");
+  cap.style.cssText="font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px";
+  cap.textContent="Guadagno accumulato";
+  box.appendChild(cap); box.appendChild(svg);
+  return box;
+}
+
+function openSnap(acctId, snapId){
+  editingAcct=acctId; editingSnap=snapId||null;
+  var c=S.conti.find(x=>x.id===acctId);
+  var s=snapsSorted(c);
+  var sn = snapId ? s.find(x=>x.id===snapId) : null;
+  var primo = sn ? (s.length && s[0].id===sn.id) : !s.length;
+  $("invTitle").textContent = (sn?"Modifica rilevazione — ":"Nuova rilevazione — ")+c.nome;
+  $("iVersatoLbl").textContent = primo
+    ? "Capitale versato finora €"
+    : "Versato dall'ultima rilevazione €";
+  var nota=$("iVersatoNota");
+  if(primo){
+    nota.innerHTML='<p class="hint" style="margin:0">Quanto avevi già messo in '+esc(c.nome)+' fino a questa data. Dalle prossime rilevazioni inserirai solo i nuovi versamenti.</p>';
+  } else {
+    var prec = sn ? s[s.indexOf(sn)-1] : s[s.length-1];
+    var cumPrec = versatoCumulato(c, prec);
+    nota.innerHTML='<p class="hint" style="margin:0">Solo i nuovi versamenti dopo il '+dmy(prec.data)+
+      '. Lascia 0 se non hai aggiunto nulla. Totale versato finora: <b>'+money(cumPrec)+'</b>.</p>';
+  }
+  $("iData").value = sn? sn.data : ymd(new Date());
+  $("iSaldo").value = sn? sn.saldo : "";
+  $("iVersato").value = sn? (versatoDi(sn)||"") : "";
+  $("iNota").value = sn? (sn.nota||"") : "";
+  $("invMask").classList.add("on");
+  setTimeout(function(){ $("iSaldo").focus(); },40);
+}
+function closeSnap(){ $("invMask").classList.remove("on"); editingAcct=null; editingSnap=null; }
+$("invCancel").addEventListener("click",closeSnap);
+$("invMask").addEventListener("click",function(e){ if(e.target===this) closeSnap(); });
+$("invSave").addEventListener("click",function(){
+  var c=S.conti.find(x=>x.id===editingAcct); if(!c) return;
+  if(!$("iData").value){ toast("Manca la data"); return; }
+  var saldo=parseFloat($("iSaldo").value);
+  if(isNaN(saldo)){ toast("Inserisci il saldo"); return; }
+  var rec={
+    id: editingSnap || uid(),
+    data:$("iData").value, saldo:saldo,
+    versatoDelta: $("iVersato").value==="" ? 0 : (parseFloat($("iVersato").value)||0),
+    nota:$("iNota").value.trim()
+  };
+  c.snapshots=c.snapshots||[];
+  if(editingSnap) c.snapshots=c.snapshots.map(x=>x.id===editingSnap?rec:x);
+  else c.snapshots.push(rec);
+  save(); closeSnap(); renderInvestimenti(); toast("Rilevazione salvata");
+});
+
+/* ═══════════════════════════════════════════════
+   Impostazioni
+   ═══════════════════════════════════════════════ */
+function renderImpostazioni(){
+  $("viewTitle").textContent="Impostazioni";
+  var bal=bucketBalances();
+  var body=$("setAlloc"); body.innerHTML="";
+  var totObj=0;
+  S.config.allocazioni.forEach(function(k){
+    totObj += Number(S.config.obiettivi[k])||0;
+    var tr=el("tr");
+    var nm=cella("Fondo","testata");
+    var d=el("span","dot"); d.style.background=coloreFondo(k);
+    nm.appendChild(d); nm.appendChild(document.createTextNode(k));
+    tr.appendChild(nm);
+
+    var c1=cella("Saldo iniziale €","num");
+    var i1=document.createElement("input");
+    i1.type="number"; i1.step="0.01"; i1.style.textAlign="right";
+    i1.value=Number(S.config.saldiIniziali[k])||0;
+    i1.addEventListener("change",function(){
+      S.config.saldiIniziali[k]=parseFloat(this.value)||0; save(); renderImpostazioni();
+    });
+    c1.appendChild(i1); tr.appendChild(c1);
+
+    var c2=cella("Obiettivo €","num");
+    var i2=document.createElement("input");
+    i2.type="number"; i2.step="100"; i2.min="0"; i2.style.textAlign="right";
+    i2.value=Number(S.config.obiettivi[k])||0;
+    i2.addEventListener("change",function(){
+      S.config.obiettivi[k]=parseFloat(this.value)||0; save(); renderImpostazioni();
+    });
+    c2.appendChild(i2); tr.appendChild(c2);
+
+    var az=cella("","azioni"), aw=el("div","row-tools");
+    var ren=el("button","btn sm","Rinomina");
+    ren.addEventListener("click",function(){ rinominaFondo(k); });
+    var can=el("button","btn sm danger","Elimina");
+    can.disabled = S.config.allocazioni.length<=1;
+    can.addEventListener("click",function(){ chiediEliminaFondo(k); });
+    aw.appendChild(ren); aw.appendChild(can); az.appendChild(aw); tr.appendChild(az);
+
+    body.appendChild(tr);
+  });
+  var f=$("setAllocFoot"); f.innerHTML="";
+  var ftr=el("tr");
+  ftr.appendChild(el("td",null,"Totale"));
+  ftr.appendChild(el("td","num", money(Object.keys(S.config.saldiIniziali).reduce(function(a,k){ return a+(Number(S.config.saldiIniziali[k])||0); },0))));
+  ftr.appendChild(el("td","num", money(totObj)));
+  ftr.appendChild(el("td"));
+  f.appendChild(ftr);
+
+  renderAnni();
+  renderRegole();
+  fillSelect($("rFondo"), S.config.allocazioni, null, $("rFondo").value);
+  chips("chipsArg","argomenti");
+  chips("chipsPort","portafogli");
+  chips("chipsNec","necessita");
+}
+
+function campoValore(v, onChange){
+  var box=el("div","valore-campo");
+  var inp=document.createElement("input");
+  inp.type="number"; inp.step="0.01"; inp.min="0"; inp.style.textAlign="right";
+  inp.value = valoreCifra(v);
+  inp.addEventListener("change",function(){
+    var n=parseFloat(this.value)||0;
+    if(v.modo==="percentuale"){ v.percentuale=Math.min(100,Math.max(0,n)); }
+    else { v.importo=Math.max(0,n); }
+    onChange();
+  });
+  var seg=el("div","seg mini");
+  [["importo","\u20ac"],["percentuale","%"]].forEach(function(par){
+    var b=el("button",v.modo===par[0]?"on":"",par[1]);
+    b.type="button";
+    b.title = par[0]==="importo" ? "Importo fisso in euro" : "Percentuale delle entrate del mese";
+    b.addEventListener("click",function(){
+      if(v.modo===par[0]) return;
+      v.modo=par[0]; onChange();
+    });
+    seg.appendChild(b);
+  });
+  box.appendChild(inp); box.appendChild(seg);
+  return box;
+}
+
+/* ── Fondi di allocazione: crea, rinomina, elimina ── */
+function usiFondo(nome){
+  return {
+    movimenti: tx().filter(function(t){ return t.allocazione===nome; }).length,
+    regole: (S.config.regole||[]).filter(function(r){ return r.fondo===nome; }).length,
+    saldo: Number(S.config.saldiIniziali[nome])||0
+  };
+}
+
+$("btnAddAlloc").addEventListener("click",function(){
+  var v=$("newAlloc").value.trim().replace(/\s+/g," ");
+  if(!v){ toast("Scrivi il nome del fondo"); return; }
+  if(S.config.allocazioni.some(function(a){ return a.toLowerCase()===v.toLowerCase(); })){
+    toast("Esiste già un fondo con questo nome"); return;
+  }
+  var dove=S.config.allocazioni.indexOf("Non allocato");
+  if(dove<0) dove=S.config.allocazioni.length;
+  S.config.allocazioni.splice(dove,0,v);
+  S.config.saldiIniziali[v]=0;
+  S.config.obiettivi[v]=0;
+  $("newAlloc").value="";
+  save(); renderImpostazioni(); toast("Fondo «"+v+"» creato");
+});
+$("newAlloc").addEventListener("keydown",function(e){ if(e.key==="Enter") $("btnAddAlloc").click(); });
+
+function rinominaFondo(vecchio){
+  var risposta=prompt("Nuovo nome per il fondo «"+vecchio+"»", vecchio);
+  if(risposta===null) return;
+  var nuovo=String(risposta).trim().replace(/\s+/g," ");
+  if(!nuovo){ toast("Il nome non può essere vuoto"); return; }
+  if(nuovo===vecchio) return;
+  if(S.config.allocazioni.some(function(a){ return a.toLowerCase()===nuovo.toLowerCase(); })){
+    toast("Esiste già un fondo con questo nome"); return;
+  }
+  var u=usiFondo(vecchio);
+  S.config.allocazioni=S.config.allocazioni.map(function(a){ return a===vecchio?nuovo:a; });
+  S.config.saldiIniziali[nuovo]=S.config.saldiIniziali[vecchio]||0;
+  S.config.obiettivi[nuovo]=S.config.obiettivi[vecchio]||0;
+  delete S.config.saldiIniziali[vecchio];
+  delete S.config.obiettivi[vecchio];
+  tx().forEach(function(t){ if(t.allocazione===vecchio) t.allocazione=nuovo; });
+  (S.config.regole||[]).forEach(function(r){ if(r.fondo===vecchio) r.fondo=nuovo; });
+  save(); renderImpostazioni();
+  toast("Rinominato in «"+nuovo+"»"+(u.movimenti?" · "+u.movimenti+" movimenti aggiornati":""));
+}
+
+var fondoDaEliminare=null;
+function chiediEliminaFondo(nome){
+  var u=usiFondo(nome);
+  fondoDaEliminare=nome;
+  $("allocTitle").textContent="Elimina «"+nome+"»";
+  var pezzi=[];
+  if(u.movimenti) pezzi.push(u.movimenti+" moviment"+(u.movimenti===1?"o":"i"));
+  if(u.regole) pezzi.push(u.regole+" regol"+(u.regole===1?"a":"e")+" di allocazione automatica");
+  if(Math.abs(u.saldo)>0.005) pezzi.push("un saldo iniziale di "+money(u.saldo));
+
+  var altri=S.config.allocazioni.filter(function(a){ return a!==nome; });
+  var serve = u.movimenti>0;
+  $("allocDestWrap").style.display = serve ? "" : "none";
+  if(serve){
+    var sel=$("allocDest"); sel.innerHTML="";
+    altri.forEach(function(a){ var o=document.createElement("option"); o.value=a; o.textContent=a; sel.appendChild(o); });
+    var o=document.createElement("option"); o.value=""; o.textContent="Nessuna allocazione (spesa normale)"; sel.appendChild(o);
+  }
+  $("allocMsg").textContent = pezzi.length
+    ? "Questo fondo ha "+pezzi.join(", ")+"."+(serve?" Scegli dove spostare i movimenti; il resto viene eliminato.":" Verrà eliminato insieme al fondo.")
+    : "Il fondo è vuoto: nessun movimento verrà toccato.";
+  $("allocMask").classList.add("on");
+}
+function chiudiAlloc(){ $("allocMask").classList.remove("on"); fondoDaEliminare=null; }
+$("allocCancel").addEventListener("click",chiudiAlloc);
+$("allocMask").addEventListener("click",function(e){ if(e.target===this) chiudiAlloc(); });
+$("allocConfirm").addEventListener("click",function(){
+  var nome=fondoDaEliminare; if(!nome) return;
+  var u=usiFondo(nome);
+  var dest = u.movimenti>0 ? $("allocDest").value : "";
+  tx().forEach(function(t){ if(t.allocazione===nome) t.allocazione=dest; });
+  S.config.regole=(S.config.regole||[]).filter(function(r){ return r.fondo!==nome; });
+  S.config.allocazioni=S.config.allocazioni.filter(function(a){ return a!==nome; });
+  delete S.config.saldiIniziali[nome];
+  delete S.config.obiettivi[nome];
+  chiudiAlloc(); save(); renderImpostazioni();
+  toast("Fondo «"+nome+"» eliminato"+(u.movimenti?" · "+u.movimenti+" movimenti spostati":""));
+});
+
+/* ── Anni aggiunti a mano ── */
+function renderAnni(){
+  var box=$("chipsAnni"); box.innerHTML="";
+  var manuali=(S.config.anni||[]).slice().sort();
+  if(!manuali.length){
+    box.innerHTML='<span class="dim" style="font-size:12.5px">Nessun anno aggiunto a mano.</span>';
+    return;
+  }
+  manuali.forEach(function(a){
+    var conDati = tx().some(function(t){ return t.data && +t.data.slice(0,4)===+a; })
+      || S.conti.some(function(c){ return (c.snapshots||[]).some(function(s){ return s.data && +s.data.slice(0,4)===+a; }); });
+    var c=el("div","chip");
+    c.appendChild(document.createTextNode(a));
+    if(conDati){
+      var nota=el("span","dim"); nota.style.fontSize="11px"; nota.textContent="con dati";
+      c.appendChild(nota);
+    }
+    var b=el("button",null,"×"); b.title="Togli "+a+" dal menu";
+    b.addEventListener("click",function(){
+      if(conDati && !confirm("Il "+a+" contiene già dei movimenti, quindi resterà nel menu finché ci sono. Tolgo comunque l'aggiunta manuale?")) return;
+      S.config.anni=S.config.anni.filter(function(x){ return +x!==+a; });
+      if(+year===+a) year=new Date().getFullYear();
+      save(); renderAll(); toast("Anno "+a+" rimosso dal menu");
+    });
+    c.appendChild(b); box.appendChild(c);
+  });
+}
+
+function renderRegole(){
+  var wrap=$("setRegole"); wrap.innerHTML="";
+  var regole=S.config.regole||[];
+  if(!regole.length){
+    wrap.innerHTML='<div class="empty"><strong>Nessuna regola</strong>Aggiungine una qui sotto: si applicheranno alle entrate di ogni mese, nell\u0027ordine in cui compaiono.</div>';
+    return;
+  }
+  regole.forEach(function(r,i){
+    wrap.appendChild(schedaRegola(r,i,regole.length));
+  });
+}
+
+function schedaRegola(r,i,n){
+  var card=el("div","regola"+(r.attiva===false?" sospesa":""));
+
+  var head=el("div","regola-head");
+  var ord=el("div","ord");
+  var up=el("button","btn sm","\u2191"); up.title="Sposta su"; up.disabled=(i===0);
+  up.addEventListener("click",function(){ scambia(i,i-1); });
+  var dn=el("button","btn sm","\u2193"); dn.title="Sposta gi\u00f9"; dn.disabled=(i===n-1);
+  dn.addEventListener("click",function(){ scambia(i,i+1); });
+  ord.appendChild(up); ord.appendChild(dn); head.appendChild(ord);
+
+  var nm=el("div","regola-nome");
+  var d=el("span","dot"); d.style.background=coloreFondo(r.fondo);
+  nm.appendChild(d); nm.appendChild(document.createTextNode(r.fondo));
+  if(r.attiva===false) nm.appendChild(el("span","tag","sospesa"));
+  head.appendChild(nm);
+
+  var tipo=el("div","seg mini tipo");
+  [["semplice","Valore unico"],["scaglioni","A scaglioni"]].forEach(function(par){
+    var b=el("button",r.tipo===par[0]?"on":"",par[1]);
+    b.type="button";
+    b.addEventListener("click",function(){
+      if(r.tipo===par[0]) return;
+      r.tipo=par[0];
+      if(r.tipo==="scaglioni" && !(r.scaglioni||[]).length){
+        r.scaglioni=[{da:0, valore:valoreVuoto("importo")}];
+      }
+      save(); renderImpostazioni();
+    });
+    tipo.appendChild(b);
+  });
+  head.appendChild(tipo);
+
+  var tools=el("div","row-tools");
+  var sw=el("button","btn sm", r.attiva===false ? "Attiva" : "Sospendi");
+  sw.addEventListener("click",function(){ r.attiva=(r.attiva===false); save(); renderImpostazioni(); });
+  var del=el("button","btn sm danger","Elimina");
+  del.addEventListener("click",function(){
+    if(!confirm("Eliminare la regola su "+r.fondo+"?")) return;
+    S.config.regole=S.config.regole.filter(function(x){ return x!==r; });
+    save(); renderImpostazioni(); toast("Regola eliminata");
+  });
+  tools.appendChild(sw); tools.appendChild(del); head.appendChild(tools);
+  card.appendChild(head);
+
+  var corpo=el("div","regola-corpo");
+  if(r.tipo!=="scaglioni"){
+    var riga=el("div","riga-valore");
+    riga.appendChild(el("span","etichetta","Ogni mese versa"));
+    riga.appendChild(campoValore(r.valore, function(){ save(); renderImpostazioni(); }));
+    corpo.appendChild(riga);
+  } else {
+    var sc=scaglioniOrdinati(r);
+    r.scaglioni=sc;
+    var tw=el("div","tw");
+    var t=el("table");
+    t.innerHTML='<thead><tr><th style="width:210px">Se le entrate del mese sono</th><th style="width:190px">versa</th><th></th></tr></thead>';
+    var tb=el("tbody");
+    sc.forEach(function(s,k){
+      var tr=el("tr");
+      var c1=el("td");
+      var box=el("div","soglia");
+      box.appendChild(el("span","dim", k===0 ? "da" : "da"));
+      var inp=document.createElement("input");
+      inp.type="number"; inp.step="50"; inp.min="0"; inp.style.textAlign="right"; inp.style.width="110px";
+      inp.value=Number(s.da)||0;
+      inp.addEventListener("change",function(){
+        s.da=Math.max(0,parseFloat(this.value)||0); save(); renderImpostazioni();
+      });
+      box.appendChild(inp);
+      box.appendChild(el("span","dim", k<sc.length-1 ? "\u20ac fino a "+eur0.format(Number(sc[k+1].da)||0) : "\u20ac in su"));
+      c1.appendChild(box); tr.appendChild(c1);
+
+      var c2=el("td");
+      c2.appendChild(campoValore(s.valore, function(){ save(); renderImpostazioni(); }));
+      tr.appendChild(c2);
+
+      var c3=el("td");
+      var w=el("div","row-tools");
+      var rm=el("button","btn sm danger","Rimuovi");
+      rm.disabled = sc.length<=1;
+      rm.addEventListener("click",function(){
+        r.scaglioni=r.scaglioni.filter(function(x){ return x!==s; });
+        save(); renderImpostazioni();
+      });
+      w.appendChild(rm); c3.appendChild(w); tr.appendChild(c3);
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb); tw.appendChild(t); corpo.appendChild(tw);
+
+    var add=el("button","btn sm","+ Aggiungi scaglione");
+    add.style.marginTop="10px";
+    add.addEventListener("click",function(){
+      var ultimo=sc.length ? Number(sc[sc.length-1].da)||0 : 0;
+      r.scaglioni.push({da: ultimo+500, valore: valoreVuoto("importo")});
+      save(); renderImpostazioni();
+    });
+    corpo.appendChild(add);
+    corpo.appendChild(el("p","hint","Sotto la prima soglia non viene versato nulla. Vale sempre lo scaglione pi\u00f9 alto raggiunto dalle entrate."));
+  }
+  card.appendChild(corpo);
+  return card;
+}
+function scambia(a,b){
+  var r=S.config.regole;
+  if(b<0 || b>=r.length) return;
+  var tmp=r[a]; r[a]=r[b]; r[b]=tmp;
+  save(); renderImpostazioni();
+}
+
+document.getElementById("rAdd").addEventListener("click",function(){
+  var tipo=$("rTipo").value;
+  var r={ id:uid(), fondo:$("rFondo").value, tipo:tipo, attiva:true,
+          valore:valoreVuoto("percentuale"), scaglioni:[] };
+  if(tipo==="scaglioni"){
+    r.scaglioni=[{da:0, valore:valoreVuoto("importo")}];
+  }
+  S.config.regole.push(r);
+  save(); renderImpostazioni();
+  toast("Regola aggiunta — ora imposta i valori");
+});
+function chips(containerId, key){
+  var box=$(containerId); box.innerHTML="";
+  var lista=S.config[key];
+  lista.forEach(function(v,i){
+    var c=el("div","chip");
+    if(key==="necessita"){
+      var col=el("span","dot"); col.className="dot "+classeNecessita(v);
+      col.style.cssText="width:8px;height:8px;border-radius:2px;margin-right:2px;border:1px solid currentColor";
+      c.appendChild(col);
+      var su=el("button",null,"↑"); su.title="Sposta prima"; su.disabled=(i===0);
+      su.addEventListener("click",function(){
+        var t=lista[i]; lista[i]=lista[i-1]; lista[i-1]=t; save(); renderImpostazioni();
+      });
+      c.appendChild(su);
+    }
+    c.appendChild(document.createTextNode(v));
+    var b=el("button",null,"×"); b.title="Rimuovi "+v;
+    b.addEventListener("click",function(){
+      var used = tx().some(function(t){
+        return key==="argomenti" ? t.argomento===v
+             : key==="portafogli" ? t.portafoglio===v
+             : t.necessita===v;
+      });
+      if(key==="necessita" && lista.length<=1){ toast("Deve restare almeno un livello"); return; }
+      if(used && !confirm("«"+v+"» è usato da alcune voci. Rimuoverlo comunque? Le voci restano invariate.")) return;
+      S.config[key]=lista.filter(function(x){ return x!==v; });
+      save(); renderImpostazioni();
+    });
+    c.appendChild(b); box.appendChild(c);
+  });
+}
+document.addEventListener("click",function(e){
+  var b=e.target.closest("button[data-add]"); if(!b) return;
+  var key=b.dataset.add;
+  var inp = key==="argomenti" ? $("newArg") : key==="portafogli" ? $("newPort") : $("newNec");
+  var v=inp.value.trim().replace(/\s+/g," "); if(!v) return;
+  if(S.config[key].some(function(x){ return x.toLowerCase()===v.toLowerCase(); })){ toast("Esiste già"); return; }
+  S.config[key].push(v); inp.value=""; save(); renderImpostazioni(); toast("Aggiunto");
+});
+
+/* ═══════════════════════════════════════════════
+   Import / Export
+   ═══════════════════════════════════════════════ */
+function doExport(){
+  var payload=JSON.stringify(S,null,2);
+  var blob=new Blob([payload],{type:"application/json"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="libromastro-"+ymd(new Date())+".json";
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },0);
+  toast("Backup scaricato");
+}
+$("btnExport").addEventListener("click",doExport);
+$("btnExport2").addEventListener("click",doExport);
+$("btnImport").addEventListener("click",function(){ $("fileIn").click(); });
+$("btnInstalla").addEventListener("click",function(){
+  if(!promptInstalla) return;
+  promptInstalla.prompt();
+  promptInstalla.userChoice.then(function(){ promptInstalla=null; $("btnInstalla").style.display="none"; });
+});
+$("btnImport2").addEventListener("click",function(){ $("fileIn").click(); });
+
+$("fileIn").addEventListener("change",function(){
+  var file=this.files[0]; if(!file) return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{ importPayload(JSON.parse(r.result)); }
+    catch(e){ toast("File non leggibile: non è un JSON valido"); }
+  };
+  r.readAsText(file);
+  this.value="";
+});
+
+function importPayload(d){
+  if(!d || typeof d!=="object"){ toast("File non riconosciuto"); return; }
+
+  /* backup completo → chiede se sostituire */
+  var isBackup = Array.isArray(d.transactions) && d.config;
+  var incoming = Array.isArray(d.transactions) ? d.transactions
+               : Array.isArray(d.movimenti) ? d.movimenti : [];
+  if(!incoming.length && !d.conti){ toast("Nessun movimento nel file"); return; }
+
+  if(isBackup && tx().length && confirm("Il file è un backup completo.\n\nOK = sostituisci tutti i dati attuali\nAnnulla = unisci solo i movimenti nuovi")){
+    S = Object.assign(defaults(), d);
+    S.config = Object.assign(defaults().config, d.config||{});
+    save(); renderAll(); toast("Dati sostituiti dal backup");
+    return;
+  }
+
+  /* Due spese identiche nello stesso giorno sono legittime (due ricariche uguali,
+     due caffè). Conto quante ne esistono già e ne accetto altrettante: un reimport
+     dello stesso file non aggiunge nulla, ma nessuna riga vera va persa. */
+  var conta={};
+  tx().forEach(function(t){ var f=fingerprint(t); conta[f]=(conta[f]||0)+1; });
+
+  var added=0, skipped=0;
+  /* liste dichiarate dal file: sostituiscono quelle attuali */
+  var listeSostituite=[];
+  if(d.listeComplete && d.config){
+    ["argomenti","portafogli","necessita"].forEach(function(k){
+      if(Array.isArray(d.config[k]) && d.config[k].length){
+        S.config[k]=d.config[k].slice();
+        listeSostituite.push(k);
+      }
+    });
+    if(Array.isArray(d.config.allocazioni)){
+      d.config.allocazioni.forEach(function(a){
+        if(S.config.allocazioni.indexOf(a)<0){
+          var dove=S.config.allocazioni.indexOf(FONDO_BASE);
+          if(dove<0) dove=S.config.allocazioni.length;
+          S.config.allocazioni.splice(dove,0,a);
+          S.config.saldiIniziali[a]=0;
+          S.config.obiettivi[a]=0;
+        }
+      });
+    }
+  }
+
+  incoming.forEach(function(raw){
+    var t=normalize(raw); if(!t) return;
+    var fp=fingerprint(t);
+    if(conta[fp]>0){ conta[fp]--; skipped++; return; }
+    S.transactions.push(t); added++;
+    if(listeSostituite.indexOf("argomenti")<0 && t.argomento && S.config.argomenti.indexOf(t.argomento)<0) S.config.argomenti.push(t.argomento);
+    if(listeSostituite.indexOf("portafogli")<0 && t.portafoglio && S.config.portafogli.indexOf(t.portafoglio)<0) S.config.portafogli.push(t.portafoglio);
+  });
+
+  /* rilevazioni investimenti opzionali */
+  var snapAdded=0;
+  if(Array.isArray(d.conti)){
+    d.conti.forEach(function(ic){
+      var c=S.conti.find(function(x){ return x.id===ic.id || x.nome===ic.nome; });
+      if(!c) return;
+      c.snapshots=c.snapshots||[];
+      (ic.snapshots||[]).forEach(function(sn){
+        if(!sn.data) return;
+        if(c.snapshots.some(function(x){ return x.data===sn.data; })) return;
+        c.snapshots.push({id:uid(), data:sn.data, saldo:Number(sn.saldo)||0,
+          versatoDelta: sn.versatoDelta!=null ? (Number(sn.versatoDelta)||0)
+            : (sn.versato!=null ? (Number(sn.versato)||0) : 0),
+          nota:sn.nota||""});
+        snapAdded++;
+      });
+    });
+  }
+
+  save(); renderAll();
+  toast(added+" voci aggiunte · "+skipped+" duplicati ignorati"+
+    (snapAdded?(" · "+snapAdded+" rilevazioni"):"")+
+    (listeSostituite.length?(" · elenchi aggiornati"):""));
+}
+
+function normalize(r){
+  var data = r.data || r.date || "";
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(data)){ var p=data.split("/"); data=p[2]+"-"+p[1]+"-"+p[0]; }
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(data)) return null;
+  var imp = Number(r.importo!=null?r.importo:r.amount);
+  if(isNaN(imp)) return null;
+  var tipo = r.tipo || (imp>=0 ? "Entrata" : "Uscita");
+  tipo = /giroconto/i.test(tipo) ? "Giroconto" : /entrat/i.test(tipo) ? "Entrata" : "Uscita";
+  var rec = {
+    id: uid(),
+    data:data, tipo:tipo, importo:Math.abs(imp),
+    argomento: r.argomento!=null ? r.argomento : (r.categoria || ""),
+    dettaglio: (r.dettaglio || r.descrizione || r.description || "").toString().trim(),
+    portafoglio: r.portafoglio || r.conto || (S.config.portafogli[0]||"Conto corrente"),
+    allocazione: r.allocazione || "",
+    necessita: r.necessita || (tipo!=="Uscita" ? "—" : "")
+  };
+  /* testo grezzo dell'estratto: resta come promemoria finché non compili il dettaglio */
+  if(r.originale) rec.originale = String(r.originale).trim();
+  if(tipo==="Giroconto"){
+    rec.origine = r.origine || "";
+    if(r.portafoglioDest) rec.portafoglioDest = String(r.portafoglioDest).trim();
+    rec.necessita = "—";
+  }
+  return rec;
+}
+
+/* ── Reset & demo ── */
+$("btnWipe").addEventListener("click",function(){
+  if(!confirm("Cancella tutti i movimenti, le rilevazioni e le impostazioni. L'operazione non è reversibile: hai un backup?")) return;
+  S=defaults(); save(); renderAll(); toast("Tutti i dati cancellati");
+});
+$("btnDemo").addEventListener("click",function(){
+  if(tx().length && !confirm("Aggiunge alcune voci di esempio ai dati attuali. Procedo?")) return;
+  var y=new Date().getFullYear();
+  var demo=[
+    {data:y+"-01-27",tipo:"Entrata",importo:1850,argomento:"Stipendio",dettaglio:"Stipendio gennaio",portafoglio:"Conto corrente",allocazione:"",necessita:"—"},
+    {data:y+"-01-28",tipo:"Uscita",importo:620,argomento:"Casa",dettaglio:"Affitto",portafoglio:"Conto corrente",allocazione:"",necessita:"Necessaria"},
+    {data:y+"-01-28",tipo:"Uscita",importo:300,argomento:"Risparmio",dettaglio:"Accantonamento mensile",portafoglio:"Conto corrente",allocazione:"Fondo di emergenza",necessita:"—"},
+    {data:y+"-01-30",tipo:"Uscita",importo:64.2,argomento:"Alimentari",dettaglio:"Spesa settimanale",portafoglio:"Carta di credito",allocazione:"",necessita:"Necessaria"},
+    {data:y+"-02-05",tipo:"Uscita",importo:14.99,argomento:"Abbonamenti",dettaglio:"Streaming",portafoglio:"PayPal",allocazione:"",necessita:"Superflua"},
+    {data:y+"-02-27",tipo:"Entrata",importo:1850,argomento:"Stipendio",dettaglio:"Stipendio febbraio",portafoglio:"Conto corrente",allocazione:"",necessita:"—"},
+    {data:y+"-02-28",tipo:"Uscita",importo:250,argomento:"Investimenti",dettaglio:"Versamento PAC",portafoglio:"Conto corrente",allocazione:"Investimenti",necessita:"—"}
+  ];
+  demo.forEach(function(d){ d.id=uid(); S.transactions.push(d); });
+  save(); renderAll(); toast("Dati di esempio caricati");
+});
+
+/* ── Tasti ── */
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"){ closeTx(); closeSnap(); chiudiAlloc(); }
+  if(e.key==="Enter" && $("txMask").classList.contains("on") && e.target.tagName!=="TEXTAREA"){ $("txSave").click(); }
+  if(e.key==="Enter" && $("invMask").classList.contains("on")){ $("invSave").click(); }
+});
+
+/* ═══════════════════════════════════════════════
+   App installata: service worker, storage, avvisi
+   ═══════════════════════════════════════════════ */
+if("serviceWorker" in navigator && location.protocol!=="file:"){
+  window.addEventListener("load",function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+
+/* Chiede al sistema di non cancellare i dati per fare spazio.
+   Su Android viene concesso quasi sempre dopo l'installazione. */
+if(navigator.storage && navigator.storage.persist){
+  navigator.storage.persisted().then(function(gia){
+    if(!gia) navigator.storage.persist();
+  });
+}
+
+/* Pulsante di installazione, quando il browser lo consente */
+var promptInstalla=null;
+window.addEventListener("beforeinstallprompt",function(e){
+  e.preventDefault(); promptInstalla=e;
+  var b=$("btnInstalla"); if(b) b.style.display="";
+});
+window.addEventListener("appinstalled",function(){
+  promptInstalla=null;
+  var b=$("btnInstalla"); if(b) b.style.display="none";
+  toast("App installata: la trovi tra le tue applicazioni");
+});
+
+/* Scorciatoie del menu lungo sull'icona */
+(function(){
+  var q=new URLSearchParams(location.search);
+  var v=q.get("vista");
+  if(v && ["riepilogo","investimenti","movimenti","impostazioni"].indexOf(v)>=0){
+    var b=document.querySelector('.nav button[data-view="'+v+'"]');
+    if(b) b.click();
+  }
+  if(q.get("azione")==="nuova") setTimeout(function(){ openTx(null); },120);
+})();
+
+/* ── Avvio ── */
+if(MEM_ONLY){
+  var w=$("warn"); w.classList.add("on");
+  w.textContent="Il salvataggio automatico non è disponibile in questa finestra. Scarica il file finanze.html e aprilo dal tuo PC, oppure usa «Esporta backup» prima di chiudere.";
+}
+renderAll();
+</script>
+</body>
+</html>
