@@ -1053,7 +1053,7 @@ function $(id){ return document.getElementById(id); }
 function el(tag,cls,txt){ var e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
 /* Su telefono le righe diventano schede: ogni cella mostra l'etichetta
    della sua colonna, presa da data-et. */
-function td(etichetta,cls,txt){
+function cella(etichetta,cls,txt){
   var e=document.createElement("td");
   if(cls) e.className=cls;
   if(etichetta) e.setAttribute("data-et",etichetta);
@@ -1367,19 +1367,19 @@ function renderMovimenti(){
 
   rows.forEach(function(t){
     var tr=el("tr");
-    tr.appendChild(td("Data","testata",dmy(t.data)));
+    tr.appendChild(cella("Data","testata",dmy(t.data)));
 
-    var imp=td("Importo","num testata "+(t.tipo==="Entrata"?"pos":t.tipo==="Giroconto"?"dim":"neg"));
+    var imp=cella("Importo","num testata "+(t.tipo==="Entrata"?"pos":t.tipo==="Giroconto"?"dim":"neg"));
     imp.textContent=(t.tipo==="Entrata"?"+":t.tipo==="Giroconto"?"":"−")+money(Math.abs(+t.importo||0)).replace("€","")+"€";
     tr.appendChild(imp);
 
-    var argC=td("Argomento");
+    var argC=cella("Argomento");
     if(t.tipo==="Giroconto") argC.textContent="Giroconto";
     else if(t.argomento) argC.textContent=t.argomento;
     else { argC.className="da-compilare"; argC.textContent="da compilare"; }
     tr.appendChild(argC);
 
-    var dt=td("Dettaglio");
+    var dt=cella("Dettaglio");
     if(t.dettaglio){
       dt.appendChild(document.createTextNode(t.dettaglio));
     } else if(t.originale){
@@ -1396,7 +1396,7 @@ function renderMovimenti(){
     }
     tr.appendChild(dt);
 
-    var pc=td("Portafoglio");
+    var pc=cella("Portafoglio");
     if(t.tipo==="Giroconto" && t.portafoglioDest){
       pc.appendChild(document.createTextNode(esc(t.portafoglio)+" "));
       var fr0=el("span","dim"); fr0.textContent="→ "; pc.appendChild(fr0);
@@ -1408,7 +1408,7 @@ function renderMovimenti(){
     }
     tr.appendChild(pc);
 
-    var al=td("Allocazione");
+    var al=cella("Allocazione");
     if(t.tipo==="Giroconto"){
       var da=fondoOrigine(t), a=fondoDi(t);
       if(da===a){
@@ -1431,13 +1431,13 @@ function renderMovimenti(){
     }
     tr.appendChild(al);
 
-    var nc=td("Necessità");
+    var nc=cella("Necessità");
     if(t.necessita && t.necessita!=="—") nc.appendChild(el("span","tag "+classeNecessita(t.necessita),t.necessita));
     else if(t.tipo==="Uscita" && !t.necessita) nc.appendChild(el("span","da-compilare","da compilare"));
     else { nc.className="vuoto"; nc.textContent="—"; }
     tr.appendChild(nc);
 
-    var tools=td("","azioni"), wrap=el("div","row-tools");
+    var tools=cella("","azioni"), wrap=el("div","row-tools");
     var e1=el("button","btn sm","Modifica"); e1.addEventListener("click",function(){ openTx(t.id); });
     var e2=el("button","btn sm danger","Elimina");
     e2.addEventListener("click",function(){
@@ -1842,13 +1842,13 @@ function renderRiepilogo(){
   var b=$("sumBody"); b.innerHTML="";
   rows.forEach(function(r){
     var tr=el("tr");
-    var mn=td("Mese","testata"); mn.innerHTML='<a href="#" data-m="'+r.m+'" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--line)">'+MESI[r.m]+'</a>';
+    var mn=cella("Mese","testata"); mn.innerHTML='<a href="#" data-m="'+r.m+'" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--line)">'+MESI[r.m]+'</a>';
     tr.appendChild(mn);
-    tr.appendChild(td("Entrate","num "+(r.inc?"pos":"dim"), r.inc?money(r.inc):"—"));
-    tr.appendChild(td("Uscite","num "+(r.out?"neg":"dim"), r.out?money(r.out):"—"));
-    tr.appendChild(td("Saldo","num "+(r.n?(r.net>=0?"pos":"neg"):"dim"), r.n?money(r.net):"—"));
-    tr.appendChild(td("Risparmio","num dim", r.inc>0?pct(r.net/r.inc*100):"—"));
-    tr.appendChild(td("Voci","num dim", r.n||"—"));
+    tr.appendChild(cella("Entrate","num "+(r.inc?"pos":"dim"), r.inc?money(r.inc):"—"));
+    tr.appendChild(cella("Uscite","num "+(r.out?"neg":"dim"), r.out?money(r.out):"—"));
+    tr.appendChild(cella("Saldo","num "+(r.n?(r.net>=0?"pos":"neg"):"dim"), r.n?money(r.net):"—"));
+    tr.appendChild(cella("Risparmio","num dim", r.inc>0?pct(r.net/r.inc*100):"—"));
+    tr.appendChild(cella("Voci","num dim", r.n||"—"));
     b.appendChild(tr);
   });
   if(!b.dataset.bound){
@@ -1982,18 +1982,18 @@ function renderRibbon(){
     var raggiunto = obj>0 && v>=obj-0.005;
 
     var tr=el("tr","fondo-"+(st||"attivo"));
-    var nm=td("Fondo","testata");
+    var nm=cella("Fondo","testata");
     var d=el("span","dot"); d.style.background=col;
     nm.appendChild(d); nm.appendChild(document.createTextNode(k));
     if(st==="completato") nm.appendChild(el("span","tag done","completato"));
     if(st==="concluso") nm.appendChild(el("span","tag","concluso"));
     tr.appendChild(nm);
 
-    tr.appendChild(td("Saldo","num testata "+(v<0?"neg":""),money(v)));
-    tr.appendChild(td("Quota","num dim",pct(share)));
-    tr.appendChild(td("Obiettivo","num "+(obj?"":"dim"), obj?money(obj):"senza tetto"));
+    tr.appendChild(cella("Saldo","num testata "+(v<0?"neg":""),money(v)));
+    tr.appendChild(cella("Quota","num dim",pct(share)));
+    tr.appendChild(cella("Obiettivo","num "+(obj?"":"dim"), obj?money(obj):"senza tetto"));
 
-    var pc=td("Progresso","num");
+    var pc=cella("Progresso","num");
     var quota = obj>0 ? v/obj*100 : share;
     pc.innerHTML='<span class="mini-bar"><span style="width:'+Math.max(0,Math.min(100,quota))+'%;background:'+col+'"></span></span>'+
       '<span'+(obj>0?'':' class="dim"')+'>'+pct(quota)+'</span>';
@@ -2001,7 +2001,7 @@ function renderRibbon(){
     tr.appendChild(pc);
 
     var manca = obj>0 ? obj-v : null;
-    var mc=td("Mancante","num");
+    var mc=cella("Mancante","num");
     if(st==="concluso"){
       mc.className="num dim";
       mc.textContent = Math.abs(v)<0.005 ? "esaurito" : money(v)+" residui";
@@ -2015,7 +2015,7 @@ function renderRibbon(){
     tr.appendChild(mc);
 
     /* azioni: il passaggio di stato è sempre esplicito, mai automatico */
-    var az=td("","azioni"), w=el("div","row-tools");
+    var az=cella("","azioni"), w=el("div","row-tools");
     if(st===""){
       if(raggiunto){
         var b1=el("button","btn sm ok","Segna completato");
@@ -2227,23 +2227,23 @@ function accountCard(c){
     function rigaCompleta(k){
       var sn=s[k], n=nettoDi(k), vers=versatoDi(sn);
       var tr=el("tr");
-      tr.appendChild(td("Data","testata",dmy(sn.data)));
-      tr.appendChild(td("Saldo","num testata",money(sn.saldo)));
-      tr.appendChild(td("Versato","num "+(vers?"":"vuoto dim"), vers?"+"+money(vers):"—"));
-      tr.appendChild(td("Versato tot.","num dim", cum[k]?money(cum[k]):"—"));
+      tr.appendChild(cella("Data","testata",dmy(sn.data)));
+      tr.appendChild(cella("Saldo","num testata",money(sn.saldo)));
+      tr.appendChild(cella("Versato","num "+(vers?"":"vuoto dim"), vers?"+"+money(vers):"—"));
+      tr.appendChild(cella("Versato tot.","num dim", cum[k]?money(cum[k]):"—"));
 
-      var ce=td("Variazione €","num "+(n==null?"dim":n.eur>=0?"pos":"neg"));
+      var ce=cella("Variazione €","num "+(n==null?"dim":n.eur>=0?"pos":"neg"));
       ce.textContent = n==null ? "—" : (n.eur>=0?"+":"\u2212")+money(Math.abs(n.eur));
       if(n && vers) ce.title="Saldo cresciuto di "+money(Number(sn.saldo)-Number(s[k-1].saldo))+
         " di cui "+money(vers)+" versati da te";
       tr.appendChild(ce);
 
-      var cp=td("Variazione %","num "+(n==null||n.pct==null?"dim":n.pct>=0?"pos":"neg"));
+      var cp=cella("Variazione %","num "+(n==null||n.pct==null?"dim":n.pct>=0?"pos":"neg"));
       cp.textContent = (n==null||n.pct==null) ? "—" : (n.pct>=0?"+":"\u2212")+pct(Math.abs(n.pct));
       if(n && n.pct!=null) cp.title="Su "+money(n.base)+" presenti a inizio periodo";
       tr.appendChild(cp);
 
-      var an=td("Andamento");
+      var an=cella("Andamento");
       if(n==null || n.pct==null){
         an.className="dim"; an.style.fontSize="12px";
         an.textContent = k===0 ? "prima rilevazione" : "—";
@@ -2253,10 +2253,10 @@ function accountCard(c){
           '<span class="barra '+(n.pct>=0?"su":"giu")+'" style="width:'+largh+'%"></span></span>';
       }
       tr.appendChild(an);
-      var nt0=td("Nota", sn.nota?"":"vuoto", esc(sn.nota)||"—");
+      var nt0=cella("Nota", sn.nota?"":"vuoto", esc(sn.nota)||"—");
       tr.appendChild(nt0);
 
-      var tools=td("","azioni"), w=el("div","row-tools");
+      var tools=cella("","azioni"), w=el("div","row-tools");
       var b1=el("button","btn sm","Modifica"); b1.addEventListener("click",function(){ openSnap(c.id,sn.id); });
       var b2=el("button","btn sm danger","Elimina");
       b2.addEventListener("click",function(){
@@ -2286,23 +2286,23 @@ function accountCard(c){
     function rigaSintesi(anno, idx){
       var a=statAnno(idx);
       var tr=el("tr","anno-ridotto");
-      var c1=td("Anno","testata");
+      var c1=cella("Anno","testata");
       var b=el("button","link-anno");
       b.innerHTML='<span class="freccia">▸</span>'+anno;
       b.title="Mostra le "+a.n+" rilevazioni del "+anno;
       b.addEventListener("click",function(){ year=+anno; renderAll(); });
       c1.appendChild(b); tr.appendChild(c1);
 
-      tr.appendChild(td("Saldo a fine anno","num testata",money(a.saldoFine)));
-      tr.appendChild(td("Versato","num "+(a.vers?"":"vuoto dim"), a.vers?"+"+money(a.vers):"—"));
-      tr.appendChild(td("Versato tot.","num dim", cum[a.ultimo]?money(cum[a.ultimo]):"—"));
+      tr.appendChild(cella("Saldo a fine anno","num testata",money(a.saldoFine)));
+      tr.appendChild(cella("Versato","num "+(a.vers?"":"vuoto dim"), a.vers?"+"+money(a.vers):"—"));
+      tr.appendChild(cella("Versato tot.","num dim", cum[a.ultimo]?money(cum[a.ultimo]):"—"));
 
-      var ce=td("Variazione €","num "+(a.netto>=0?"pos":"neg"));
+      var ce=cella("Variazione €","num "+(a.netto>=0?"pos":"neg"));
       ce.textContent=(a.netto>=0?"+":"\u2212")+money(Math.abs(a.netto));
       ce.title="Crescita del saldo nell\u0027anno al netto dei "+money(a.vers)+" versati";
       tr.appendChild(ce);
 
-      var cp=td("Variazione %","num "+(a.pct==null?"dim":a.pct>=0?"pos":"neg"));
+      var cp=cella("Variazione %","num "+(a.pct==null?"dim":a.pct>=0?"pos":"neg"));
       cp.textContent = a.pct==null ? "—" : (a.pct>=0?"+":"\u2212")+pct(Math.abs(a.pct));
       cp.title = a.pct==null ? "" : (a.suVersato
         ? "Primo anno: rapportato ai "+money(a.vers)+" versati nell\u0027anno"
@@ -2310,7 +2310,7 @@ function accountCard(c){
       if(a.suVersato) cp.appendChild(el("span","asterisco","*"));
       tr.appendChild(cp);
 
-      var an=td("Andamento");
+      var an=cella("Andamento");
       if(a.pct==null){ an.className="dim"; an.style.fontSize="12px"; an.textContent="—"; }
       else {
         var largh=Math.min(50, Math.abs(a.pct)/maxAnno*50);
@@ -2319,10 +2319,10 @@ function accountCard(c){
       }
       tr.appendChild(an);
 
-      var nt=td("Nota","dim");
+      var nt=cella("Nota","dim");
       nt.textContent=a.n+" rilevazion"+(a.n===1?"e":"i");
       tr.appendChild(nt);
-      tr.appendChild(td("","vuoto"));
+      tr.appendChild(cella("","vuoto"));
       return tr;
     }
 
@@ -2450,12 +2450,12 @@ function renderImpostazioni(){
   S.config.allocazioni.forEach(function(k){
     totObj += Number(S.config.obiettivi[k])||0;
     var tr=el("tr");
-    var nm=td("Fondo","testata");
+    var nm=cella("Fondo","testata");
     var d=el("span","dot"); d.style.background=coloreFondo(k);
     nm.appendChild(d); nm.appendChild(document.createTextNode(k));
     tr.appendChild(nm);
 
-    var c1=td("Saldo iniziale €","num");
+    var c1=cella("Saldo iniziale €","num");
     var i1=document.createElement("input");
     i1.type="number"; i1.step="0.01"; i1.style.textAlign="right";
     i1.value=Number(S.config.saldiIniziali[k])||0;
@@ -2464,7 +2464,7 @@ function renderImpostazioni(){
     });
     c1.appendChild(i1); tr.appendChild(c1);
 
-    var c2=td("Obiettivo €","num");
+    var c2=cella("Obiettivo €","num");
     var i2=document.createElement("input");
     i2.type="number"; i2.step="100"; i2.min="0"; i2.style.textAlign="right";
     i2.value=Number(S.config.obiettivi[k])||0;
@@ -2473,7 +2473,7 @@ function renderImpostazioni(){
     });
     c2.appendChild(i2); tr.appendChild(c2);
 
-    var az=td("","azioni"), aw=el("div","row-tools");
+    var az=cella("","azioni"), aw=el("div","row-tools");
     var ren=el("button","btn sm","Rinomina");
     ren.addEventListener("click",function(){ rinominaFondo(k); });
     var can=el("button","btn sm danger","Elimina");
