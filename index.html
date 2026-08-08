@@ -92,13 +92,14 @@ h1,h2,h3{margin:0;font-weight:600}
 .rail-foot .stamp{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6}
 
 main{flex:1;min-width:0;display:flex;flex-direction:column}
+main > *{flex:0 0 auto}
 .topbar{
   display:flex;align-items:center;gap:12px;flex-wrap:wrap;
   padding:14px 26px;border-bottom:1px solid var(--line);
   background:linear-gradient(var(--panel),var(--ink));
 }
 .topbar .title{font-family:var(--display);font-size:19px;margin-right:auto}
-.view{padding:22px 26px 60px;display:none}
+.view{padding:22px 26px 60px;display:none;flex:0 0 auto;min-height:0}
 .view.on{display:block}
 
 /* ── Controls ───────────────────────────── */
@@ -156,7 +157,7 @@ label.f > span{
 .pos{color:var(--in)} .neg{color:var(--out)} .dim{color:var(--muted)}
 
 /* ── Tables ─────────────────────────────── */
-.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius)}
+.tw{overflow-x:auto;overflow-y:visible;border:1px solid var(--line);border-radius:var(--radius)}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{
   font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
@@ -476,11 +477,19 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
   table.mob-schede tr,
   table.mob-schede td{display:block;width:100%}
   table.mob-schede thead{display:none}
-  .tw:has(table.mob-schede){border:0;overflow:visible}
+  .tw-schede,
+  .tw:has(table.mob-schede){
+    border:0;overflow:visible;max-height:none;
+  }
   table.mob-schede tr{
     background:var(--panel-2);border:1px solid var(--line);
     border-radius:var(--radius);padding:11px 12px;margin-bottom:9px;
+    /* rete di sicurezza: una scheda non può collassare a zero */
+    min-height:44px;
   }
+  /* se per qualsiasi motivo il layout a schede non si applicasse,
+     la tabella resta comunque leggibile scorrendo in orizzontale */
+  .tw-schede{-webkit-overflow-scrolling:touch}
   table.mob-schede tr:hover{background:var(--panel-2)}
   table.mob-schede td{
     border:0;padding:3px 0;display:flex;gap:10px;
@@ -611,7 +620,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
           <button class="btn ghost" id="btnResetF" style="display:none">Azzera filtri</button>
           <button class="btn primary" id="btnNew">Aggiungi voce</button>
         </div>
-        <div class="tw">
+        <div class="tw tw-schede">
           <table id="txTable" class="mob-schede">
             <thead><tr>
               <th class="filtrabile" data-col="data" style="width:112px">Data</th>
@@ -646,7 +655,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 
       <div class="card">
         <h2>Dettaglio per mese</h2>
-        <div class="tw">
+        <div class="tw tw-schede">
           <table class="mob-schede">
             <thead><tr>
               <th>Mese</th><th class="num">Entrate</th><th class="num">Uscite</th>
@@ -664,7 +673,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
           <div class="ribbon-bar" id="ribbon"></div>
           <div class="ribbon-scale" id="notches"></div>
         </div>
-        <div class="tw">
+        <div class="tw tw-schede">
           <table class="mob-schede">
             <thead><tr>
               <th>Fondo</th><th class="num">Saldo</th><th class="num">Quota</th>
@@ -705,7 +714,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
     <section class="view" id="view-impostazioni">
       <div class="card">
         <h2>Fondi di allocazione</h2>
-        <div class="tw">
+        <div class="tw tw-schede">
           <table class="mob-schede">
             <thead><tr><th>Fondo</th><th class="num" style="width:170px">Saldo iniziale €</th><th class="num" style="width:170px">Obiettivo €</th><th style="width:180px"></th></tr></thead>
             <tbody id="setAlloc"></tbody>
@@ -2181,7 +2190,7 @@ function accountCard(c){
 
   if(s.length>1) card.appendChild(sparkline(s));
 
-  var tw=el("div","tw");
+  var tw=el("div","tw tw-schede");
   var t=el("table","mob-schede");
   t.innerHTML='<thead><tr><th style="width:104px">Data</th><th class="num">Saldo</th>'+
     '<th class="num">Versato</th><th class="num">Versato tot.</th>'+
