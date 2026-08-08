@@ -2988,6 +2988,16 @@ if("serviceWorker" in navigator && location.protocol!=="file:"){
   });
 }
 
+/* Rispetta il blocco rotazione: se l'app è installata, resta in verticale.
+   Fuori dall'app installata il blocco non è consentito e viene ignorato. */
+try{
+  if(screen.orientation && screen.orientation.lock &&
+     window.matchMedia("(display-mode: standalone)").matches){
+    var pr=screen.orientation.lock("portrait");
+    if(pr && pr.catch) pr.catch(function(){});
+  }
+}catch(e){}
+
 /* Chiede al sistema di non cancellare i dati per fare spazio.
    Su Android viene concesso quasi sempre dopo l'installazione. */
 if(navigator.storage && navigator.storage.persist){
