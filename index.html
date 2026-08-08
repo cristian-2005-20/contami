@@ -405,7 +405,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 .chip button{background:none;border:0;color:var(--muted);cursor:pointer;padding:0 2px;line-height:1}
 .chip button:hover{color:var(--out)}
 
-@media (max-width:860px){
+@media (max-width:860px), (orientation:landscape) and (max-height:520px){
   .app{flex-direction:column;align-items:stretch}
   .rail{
     width:auto;flex:none;flex-direction:row;align-items:center;
@@ -426,8 +426,10 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 
 /* ══════════════════════════════════════════════
    TELEFONO — navigazione in basso, tabelle a schede
+   Vale anche col telefono coricato: quello che conta è
+   avere poco spazio, non l'orientamento in sé.
    ══════════════════════════════════════════════ */
-@media (max-width:700px){
+@media (max-width:700px), (orientation:landscape) and (max-height:520px){
   body{font-size:15px}
 
   /* la barra passa in fondo, dove arriva il pollice */
@@ -550,6 +552,17 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 @media (max-width:520px){
   .grid3,.grid4{grid-template-columns:1fr}
   .months button{flex:1 1 30%}
+}
+/* telefono coricato: recupero altezza dove posso */
+@media (orientation:landscape) and (max-height:520px){
+  .nav button{min-height:42px;padding:6px 4px;font-size:10.5px}
+  .nav button .idx{font-size:13px}
+  main{padding-bottom:52px}
+  .topbar{padding:7px 12px}
+  .topbar .title{font-size:15px}
+  .chart{height:140px}
+  .view{padding:10px 12px 24px}
+  .col-pop{bottom:52px;max-height:56vh}
 }
 @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
 </style>
@@ -2990,13 +3003,27 @@ if("serviceWorker" in navigator && location.protocol!=="file:"){
 
 /* Rispetta il blocco rotazione: se l'app è installata, resta in verticale.
    Fuori dall'app installata il blocco non è consentito e viene ignorato. */
-try{
-  if(screen.orientation && screen.orientation.lock &&
-     window.matchMedia("(display-mode: standalone)").matches){
-    var pr=screen.orientation.lock("portrait");
-    if(pr && pr.catch) pr.catch(function(){});
-  }
-}catch(e){}
+/* Android decide da sé se rispettare la richiesta: proviamo il blocco,
+   ma il layout resta utilizzabile anche se il telefono ruota lo stesso. */
+function bloccaVerticale(){
+  try{
+    if(screen.orientation && screen.orientation.lock){
+      var pr=screen.orientation.lock("portrait-primary");
+      if(pr && pr.catch) pr.catch(function(){
+        var p2=screen.orientation.lock("portrait");
+        if(p2 && p2.catch) p2.catch(function(){});
+      });
+    }
+  }catch(e){}
+}
+if(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches){
+  bloccaVerticale();
+  /* alcune versioni di Chrome accettano il blocco solo dopo un tocco */
+  document.addEventListener("click", function primoTocco(){
+    document.removeEventListener("click", primoTocco);
+    bloccaVerticale();
+  }, true);
+}
 
 /* Chiede al sistema di non cancellare i dati per fare spazio.
    Su Android viene concesso quasi sempre dopo l'installazione. */
