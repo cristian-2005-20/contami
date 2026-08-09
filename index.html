@@ -413,6 +413,9 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
   padding:11px 16px;font-size:13px;display:none;
 }
 .warn.on{display:block}
+.passi{margin:0;padding-left:20px;font-size:13.5px;line-height:1.7}
+.passi li{margin-bottom:5px}
+.passi b{color:var(--brass)}
 .toast{
   position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(12px);
   background:var(--panel-2);border:1px solid var(--brass-dim);
@@ -626,7 +629,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
           <button class="btn" id="btnAnno" title="Aggiungi un anno all'elenco" style="padding:7px 11px">+</button>
         </div>
       </label>
-      <button class="btn primary" id="btnInstalla" style="display:none">Installa app</button>
+      <button class="btn primary" id="btnInstalla">Installa app</button>
       <button class="btn" id="btnImport">Importa dati</button>
       <button class="btn" id="btnExport">Esporta backup</button>
       <input type="file" id="fileIn" accept=".json,application/json" hidden>
@@ -916,6 +919,17 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
     <div class="modal-foot">
       <button class="btn ghost" id="allocCancel">Annulla</button>
       <button class="btn danger" id="allocConfirm">Elimina fondo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Istruzioni di installazione ── -->
+<div class="mask" id="instrMask">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:460px">
+    <h3 id="instrTitolo">Installare l'app</h3>
+    <div id="instrCorpo"></div>
+    <div class="modal-foot">
+      <button class="btn primary" id="instrChiudi">Ho capito</button>
     </div>
   </div>
 </div>
@@ -3033,10 +3047,43 @@ $("btnExport").addEventListener("click",doExport);
 $("btnExport2").addEventListener("click",doExport);
 $("btnImport").addEventListener("click",function(){ $("fileIn").click(); });
 $("btnInstalla").addEventListener("click",function(){
-  if(!promptInstalla) return;
-  promptInstalla.prompt();
-  promptInstalla.userChoice.then(function(){ promptInstalla=null; $("btnInstalla").style.display="none"; });
+  if(promptInstalla){
+    promptInstalla.prompt();
+    promptInstalla.userChoice.then(function(){
+      promptInstalla=null; $("btnInstalla").style.display="none";
+    });
+    return;
+  }
+  /* Chrome non offre l'installazione: spieghiamo la via manuale invece
+     di lasciare un pulsante che non fa niente. */
+  mostraIstruzioniInstalla();
 });
+
+function mostraIstruzioniInstalla(){
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  $("instrTitolo").textContent = "Installare l\u0027app";
+  $("instrCorpo").innerHTML = ios
+    ? '<p class="hint" style="margin:0 0 12px">Su iPhone l\u0027installazione si fa da Safari:</p>'+
+      '<ol class="passi"><li>apri questa pagina con <b>Safari</b></li>'+
+      '<li>tocca il pulsante <b>Condividi</b> in basso</li>'+
+      '<li>scegli <b>Aggiungi a Home</b></li></ol>'
+    : '<p class="hint" style="margin:0 0 12px">Chrome non sta proponendo l\u0027installazione. Puoi farla a mano:</p>'+
+      '<ol class="passi">'+
+      '<li>tocca il menu <b>\u22ee</b> in alto a destra in Chrome</li>'+
+      '<li>scegli <b>Installa app</b> oppure <b>Aggiungi a schermata Home</b></li>'+
+      '</ol>'+
+      '<p class="hint" style="margin:12px 0 0">Se la voce non c\u0027è, di solito significa che <b>l\u0027app è già installata</b>: '+
+      'cercala nel cassetto delle applicazioni. Altrimenti verifica di essere su un indirizzo che inizia per <b>https://</b> '+
+      'e non su un file aperto dalla memoria del telefono.</p>';
+  $("instrMask").classList.add("on");
+}
+$("instrChiudi").addEventListener("click",function(){ $("instrMask").classList.remove("on"); });
+$("instrMask").addEventListener("click",function(e){ if(e.target===this) this.classList.remove("on"); });
+
+/* dentro l'app installata il pulsante non serve */
+if(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches){
+  $("btnInstalla").style.display="none";
+}
 $("btnImport2").addEventListener("click",function(){ $("fileIn").click(); });
 
 $("fileIn").addEventListener("change",function(){
