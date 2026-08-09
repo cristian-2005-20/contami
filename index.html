@@ -778,11 +778,21 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
       </div>
 
       <div class="card">
-        <h2>Argomenti</h2>
-        <div class="chips" id="chipsArg"></div>
-        <div style="display:flex;gap:8px;margin-top:12px;max-width:360px">
-          <input type="text" id="newArg" placeholder="Nuovo argomento">
-          <button class="btn" data-add="argomenti">Aggiungi</button>
+        <h2>Argomenti delle uscite</h2>
+        <div class="chips" id="chipsArgU"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;max-width:400px">
+          <input type="text" id="newArgU" placeholder="Nuovo argomento di spesa">
+          <button class="btn" data-add="argomentiUscite">Aggiungi</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Argomenti delle entrate</h2>
+        <p class="hint" style="margin:0 0 12px">Elenco separato da quello delle uscite: uno stesso nome può comparire in entrambi, se ha senso per te.</p>
+        <div class="chips" id="chipsArgE"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;max-width:400px">
+          <input type="text" id="newArgE" placeholder="Nuovo argomento di entrata">
+          <button class="btn" data-add="argomentiEntrate">Aggiungi</button>
         </div>
       </div>
 
@@ -965,8 +975,9 @@ function defaults(){
       {id:"a2a", nome:"Azioni A2A", tipo:"Azioni", snapshots:[]}
     ],
     config:{
-      schema:6,
-      argomenti:["Stipendio","Alimentari","Casa","Bollette","Trasporti","Salute","Svago","Abbonamenti","Shopping","Ristoranti","Viaggi","Risparmio","Investimenti","Altro"],
+      schema:7,
+      argomentiUscite:["Alimentari","Casa","Bollette","Trasporti","Salute","Svago","Abbonamenti","Shopping","Ristoranti","Viaggi","Risparmio","Investimenti","Altro"],
+      argomentiEntrate:["Stipendio","Rimborso","Regalo","Vendita","Interessi","Altro"],
       portafogli:["Conto corrente","Contanti","Carta di credito","Prepagata","PayPal"],
       necessita:["Necessaria","Utile","Superflua"],
       stabilita:["Stabile","Saltuario","Una tantum","Non classificabile"],
@@ -1082,7 +1093,38 @@ function load(){
         }
       });
     }
-    d.config.schema = 6;
+    /* schema 7: gli argomenti si separano tra entrate e uscite.
+       La divisione segue l'uso reale: chi compare in entrambi resta in entrambi. */
+    if(schemaPrec < 7){
+      var vecchi = Array.isArray(d.config.argomenti) ? d.config.argomenti : [];
+      var inU={}, inE={};
+      (d.transactions||[]).forEach(function(t){
+        if(!t.argomento) return;
+        if(t.tipo==="Entrata") inE[t.argomento]=1;
+        else if(t.tipo==="Uscita") inU[t.argomento]=1;
+      });
+      var usati = Object.keys(inU).length + Object.keys(inE).length;
+      if(usati){
+        d.config.argomentiUscite  = vecchi.filter(function(a){ return inU[a]; });
+        d.config.argomentiEntrate = vecchi.filter(function(a){ return inE[a]; });
+        /* mai usati: restano disponibili da entrambe le parti */
+        vecchi.forEach(function(a){
+          if(!inU[a] && !inE[a]){
+            d.config.argomentiUscite.push(a);
+            d.config.argomentiEntrate.push(a);
+          }
+        });
+      } else if(vecchi.length){
+        d.config.argomentiUscite = vecchi.slice();
+        d.config.argomentiEntrate = vecchi.slice();
+      }
+      delete d.config.argomenti;
+    }
+    if(!Array.isArray(d.config.argomentiUscite) || !d.config.argomentiUscite.length)
+      d.config.argomentiUscite = defaults().config.argomentiUscite.slice();
+    if(!Array.isArray(d.config.argomentiEntrate) || !d.config.argomentiEntrate.length)
+      d.config.argomentiEntrate = defaults().config.argomentiEntrate.slice();
+    d.config.schema = 7;
     pulisciAllocazioni(d);
     if(!Array.isArray(d.conti) || !d.conti.length) d.conti = base.conti;
     return d;
@@ -1181,6 +1223,32 @@ function renderStamp(){
   var n=tx().length;
   $("stamp").innerHTML = n+" voc"+(n===1?"e":"i")+"<br>"+(MEM_ONLY?"non salvato":"salvato in locale");
 }
+/* Gli argomenti sono due elenchi distinti: quello che spendi non è
+   quello che incassi, anche se qualche voce compare in entrambi. */
+function argomentiDi(tipo){
+  return tipo==="Entrata" ? S.config.argomentiEntrate : S.config.argomentiUscite;
+}
+
+/* Ordina una lista mettendo davanti i valori che usi di più.
+   A parità di frequenza vince chi è stato usato più di recente. */
+function perFrequenza(lista, campo, tipo){
+  var uso={}, ultimo={};
+  tx().forEach(function(t){
+    if(tipo && t.tipo!==tipo) return;
+    var v = campo==="allocazione" ? (t.allocazione||"") : t[campo];
+    if(!v) return;
+    uso[v]=(uso[v]||0)+1;
+    if(!ultimo[v] || t.data>ultimo[v]) ultimo[v]=t.data;
+  });
+  return lista.slice().sort(function(a,b){
+    var da=uso[a]||0, db=uso[b]||0;
+    if(db!==da) return db-da;
+    var ua=ultimo[a]||"", ub=ultimo[b]||"";
+    if(ua!==ub) return ua<ub?1:-1;
+    return lista.indexOf(a)-lista.indexOf(b);
+  });
+}
+
 function fillSelect(sel, items, allLabel, current){
   sel.innerHTML="";
   if(allLabel!=null){ var o=document.createElement("option"); o.value=""; o.textContent=allLabel; sel.appendChild(o); }
@@ -1541,6 +1609,16 @@ $("q").addEventListener("input",renderMovimenti);
 $("btnResetF").addEventListener("click",azzeraFiltri);
 
 /* ── Modale movimento ── */
+/* Gli argomenti cambiano quando cambi tipo: quelli delle uscite non
+   hanno senso su un'entrata. Se il valore scelto esiste anche nella
+   nuova lista viene mantenuto. */
+function riempiArgomenti(valore){
+  var tipo = formTipo==="Giroconto" ? "Uscita" : formTipo;
+  var lista = perFrequenza(argomentiDi(tipo), "argomento", tipo);
+  var attuale = valore!=null ? valore : $("fArg").value;
+  fillSelect($("fArg"), lista, "—", lista.indexOf(attuale)>=0 ? attuale : "");
+}
+
 function aggiornaFormTipo(){
   var g = formTipo==="Giroconto";
   $("wOrig").style.display = g ? "" : "none";
@@ -1567,10 +1645,13 @@ function openTx(id){
   $("txTitle").textContent = t ? "Modifica voce" : "Nuova voce";
   formTipo = t ? t.tipo : "Uscita";
   [].forEach.call(document.querySelectorAll("#tipoSeg button"),function(b){ b.classList.toggle("on", b.dataset.tipo===formTipo); });
-  fillSelect($("fArg"), S.config.argomenti, "—", t?t.argomento:"");
-  fillSelect($("fPortM"), S.config.portafogli, "—", t?t.portafoglio:S.config.portafogli[0]);
-  fillSelect($("fAllocM"), S.config.allocazioni, "— "+FONDO_BASE, t?(t.allocazione||""):"");
-  fillSelect($("fOrig"), S.config.allocazioni, null, t?fondoOrigine(t):FONDO_BASE);
+  riempiArgomenti(t?t.argomento:"");
+  fillSelect($("fPortM"), perFrequenza(S.config.portafogli,"portafoglio"), "—",
+             t?t.portafoglio:(perFrequenza(S.config.portafogli,"portafoglio")[0]||""));
+  fillSelect($("fAllocM"), perFrequenza(S.config.allocazioni,"allocazione"), "— "+FONDO_BASE,
+             t?(t.allocazione||""):"");
+  fillSelect($("fOrig"), perFrequenza(S.config.allocazioni,"origine"), null,
+             t?fondoOrigine(t):FONDO_BASE);
   fillSelect($("fNec"), S.config.necessita, null, null);
   var onA=document.createElement("option"); onA.value="—"; onA.textContent="Non applicabile";
   $("fNec").appendChild(onA);
@@ -1593,6 +1674,7 @@ document.getElementById("tipoSeg").addEventListener("click",function(e){
   formTipo=b.dataset.tipo;
   [].forEach.call(this.querySelectorAll("button"),function(x){ x.classList.toggle("on",x===b); });
   if(formTipo!=="Uscita") $("fNec").value="—";
+  riempiArgomenti(null);
   aggiornaFormTipo();
 });
 $("fAllocM").addEventListener("change",aggiornaFormTipo);
@@ -2581,7 +2663,8 @@ function renderImpostazioni(){
   renderAnni();
   renderRegole();
   fillSelect($("rFondo"), S.config.allocazioni, null, $("rFondo").value);
-  chips("chipsArg","argomenti");
+  chips("chipsArgU","argomentiUscite");
+  chips("chipsArgE","argomentiEntrate");
   chips("chipsPort","portafogli");
   chips("chipsNec","necessita");
   chips("chipsStab","stabilita");
@@ -2876,10 +2959,20 @@ function chips(containerId, key){
       c.appendChild(su);
     }
     c.appendChild(document.createTextNode(v));
+    if(key==="argomentiUscite" || key==="argomentiEntrate" || key==="portafogli"){
+      var tipo = key==="argomentiEntrate" ? "Entrata" : key==="argomentiUscite" ? "Uscita" : null;
+      var campo = key==="portafogli" ? "portafoglio" : "argomento";
+      var n=tx().filter(function(t){
+        if(tipo && t.tipo!==tipo) return false;
+        return t[campo]===v;
+      }).length;
+      if(n){ var q=el("span","dim"); q.style.fontSize="11px"; q.textContent=n; c.appendChild(q); }
+    }
     var b=el("button",null,"×"); b.title="Rimuovi "+v;
     b.addEventListener("click",function(){
       var used = tx().some(function(t){
-        return key==="argomenti" ? t.argomento===v
+        return key==="argomentiUscite" ? (t.tipo!=="Entrata" && t.argomento===v)
+             : key==="argomentiEntrate" ? (t.tipo==="Entrata" && t.argomento===v)
              : key==="portafogli" ? t.portafoglio===v
              : key==="stabilita" ? t.stabilita===v
              : t.necessita===v;
@@ -2895,7 +2988,8 @@ function chips(containerId, key){
 document.addEventListener("click",function(e){
   var b=e.target.closest("button[data-add]"); if(!b) return;
   var key=b.dataset.add;
-  var inp = key==="argomenti" ? $("newArg")
+  var inp = key==="argomentiUscite" ? $("newArgU")
+          : key==="argomentiEntrate" ? $("newArgE")
           : key==="portafogli" ? $("newPort")
           : key==="stabilita" ? $("newStab") : $("newNec");
   var v=inp.value.trim().replace(/\s+/g," "); if(!v) return;
@@ -2961,14 +3055,20 @@ function importPayload(d){
 
   var added=0, skipped=0;
   /* liste dichiarate dal file: sostituiscono quelle attuali */
-  var listeSostituite=[];
+  var listeSostituite=[], listaUnica=null;
   if(d.listeComplete && d.config){
-    ["argomenti","portafogli","necessita"].forEach(function(k){
+    ["argomentiEntrate","argomentiUscite","portafogli","necessita","stabilita"].forEach(function(k){
       if(Array.isArray(d.config[k]) && d.config[k].length){
         S.config[k]=d.config[k].slice();
         listeSostituite.push(k);
       }
     });
+    /* un file con la vecchia lista unica: la teniamo da parte e la
+       dividiamo dopo, in base a come i movimenti la usano davvero */
+    if(Array.isArray(d.config.argomenti) && d.config.argomenti.length){
+      listaUnica=d.config.argomenti.slice();
+      listeSostituite.push("argomenti");
+    }
     if(Array.isArray(d.config.allocazioni)){
       d.config.allocazioni.forEach(function(a){
         if(S.config.allocazioni.indexOf(a)<0){
@@ -2987,9 +3087,26 @@ function importPayload(d){
     var fp=fingerprint(t);
     if(conta[fp]>0){ conta[fp]--; skipped++; return; }
     S.transactions.push(t); added++;
-    if(listeSostituite.indexOf("argomenti")<0 && t.argomento && S.config.argomenti.indexOf(t.argomento)<0) S.config.argomenti.push(t.argomento);
+    if((listeSostituite.indexOf("argomenti")<0 && listeSostituite.indexOf("argomentiEntrate")<0 && listeSostituite.indexOf("argomentiUscite")<0) && t.argomento){
+      var chiave = t.tipo==="Entrata" ? "argomentiEntrate" : "argomentiUscite";
+      if(S.config[chiave].indexOf(t.argomento)<0) S.config[chiave].push(t.argomento);
+    }
     if(listeSostituite.indexOf("portafogli")<0 && t.portafoglio && S.config.portafogli.indexOf(t.portafoglio)<0) S.config.portafogli.push(t.portafoglio);
   });
+
+  /* La lista unica va divisa: ogni argomento finisce dalla parte in cui
+     è realmente usato, e chi non compare da nessuna resta disponibile a entrambe. */
+  if(listaUnica){
+    var usoU={}, usoE={};
+    tx().forEach(function(t){
+      if(!t.argomento) return;
+      if(t.tipo==="Entrata") usoE[t.argomento]=1;
+      else if(t.tipo==="Uscita") usoU[t.argomento]=1;
+    });
+    var mai=listaUnica.filter(function(a){ return !usoU[a] && !usoE[a]; });
+    S.config.argomentiUscite  = listaUnica.filter(function(a){ return usoU[a]; }).concat(mai);
+    S.config.argomentiEntrate = listaUnica.filter(function(a){ return usoE[a]; }).concat(mai);
+  }
 
   /* rilevazioni investimenti opzionali */
   var snapAdded=0;
