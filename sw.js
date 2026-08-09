@@ -3,7 +3,7 @@
    I dati delle finanze NON passano di qui: restano in localStorage,
    sul dispositivo, e non vengono mai inviati da nessuna parte. */
 
-const VERSIONE = "libromastro-v5";
+const VERSIONE = "libromastro-v6";
 const FILE = [
   "./",
   "./index.html",

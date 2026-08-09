@@ -183,6 +183,11 @@ tfoot td{
 .tag.n2{border-color:#6b5c2a;color:#cdb45e}
 .tag.n3{border-color:#6b4a35;color:#dda275}
 .tag.n4{border-color:#6b3f3a;color:#e08d84}
+/* stabilità delle entrate: dal più prevedibile al meno */
+.tag.s0{border-color:#3a6b57;color:#7fc7a5}
+.tag.s1{border-color:#5a6b3a;color:#a8c77f}
+.tag.s2{border-color:#6b5c2a;color:#cdb45e}
+.tag.s3{border-color:#4a5b70;color:#8ba0b8}
 .dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px;vertical-align:1px}
 .empty{padding:38px 20px;text-align:center;color:var(--muted)}
 .empty strong{display:block;color:var(--text);font-family:var(--display);font-size:17px;margin-bottom:6px;font-weight:400}
@@ -246,6 +251,12 @@ tfoot td{
 .seg button.on{background:var(--panel-2);color:var(--text);box-shadow:inset 0 -2px 0 var(--brass)}
 
 /* ── Selettore € / % ────────────────────── */
+.seg.rapido{margin-bottom:14px}
+.seg.rapido button{padding:10px 12px;font-size:13.5px;letter-spacing:.02em}
+.seg.rapido button.on{background:var(--panel-2);color:var(--text);box-shadow:inset 0 -2px 0 var(--brass)}
+.seg.rapido button[data-t="Entrata"].on{box-shadow:inset 0 -2px 0 var(--in);color:var(--in)}
+.seg.rapido button[data-t="Uscita"].on{box-shadow:inset 0 -2px 0 var(--out);color:var(--out)}
+.seg.rapido button.misto{color:var(--brass)}
 .seg.mini{flex:0 0 auto;border-radius:var(--radius)}
 .seg.mini button{padding:6px 11px;font-size:12.5px;flex:0 0 auto;min-width:34px}
 .valore-campo{display:flex;gap:6px;align-items:center}
@@ -626,6 +637,11 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
       </div>
 
       <div class="card">
+        <div class="seg rapido" id="segTipo">
+          <button type="button" data-t="" class="on">Tutti</button>
+          <button type="button" data-t="Entrata">Entrate</button>
+          <button type="button" data-t="Uscita">Uscite</button>
+        </div>
         <div class="filters">
           <div class="f-item" style="flex:1">
             <label class="f"><span>Cerca ovunque</span><input type="search" id="q" placeholder="dettaglio, argomento, portafoglio…"></label>
@@ -642,7 +658,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
               <th class="filtrabile" data-col="dettaglio">Dettaglio</th>
               <th class="filtrabile" data-col="portafoglio">Portafoglio</th>
               <th class="filtrabile" data-col="allocazione">Allocazione</th>
-              <th class="filtrabile" data-col="necessita" style="width:120px">Necessità</th>
+              <th class="filtrabile" data-col="necessita" style="width:132px">Necessità / Stabilità</th>
               <th style="width:112px"></th>
             </tr></thead>
             <tbody id="txBody"></tbody>
@@ -790,6 +806,16 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
       </div>
 
       <div class="card">
+        <h2>Stabilità delle entrate</h2>
+        <p class="hint" style="margin:0 0 12px">Ordinati dalla più prevedibile alla meno. Il primo della lista è quello proposto per le nuove entrate.</p>
+        <div class="chips" id="chipsStab"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;max-width:400px">
+          <input type="text" id="newStab" placeholder="Nuovo livello" maxlength="40">
+          <button class="btn" data-add="stabilita">Aggiungi</button>
+        </div>
+      </div>
+
+      <div class="card">
         <h2>Dati</h2>
         <div style="display:flex;gap:9px;flex-wrap:wrap">
           <button class="btn" id="btnExport2">Esporta backup JSON</button>
@@ -824,6 +850,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
       <label class="f" id="wOrig" style="display:none"><span>Preleva dal fondo</span><select id="fOrig"></select></label>
       <label class="f" id="wAlloc"><span id="lblAlloc">Attingi dal fondo</span><select id="fAllocM"></select></label>
       <label class="f" id="wNec"><span>Necessità</span><select id="fNec"></select></label>
+      <label class="f" id="wStab"><span>Stabilità entrata</span><select id="fStab"></select></label>
       <div class="full" id="notaAlloc"></div>
     </div>
     <div class="modal-foot">
@@ -906,6 +933,14 @@ var BUCKET_COLORS = {
 /* i fondi creati a mano ricevono un colore stabile, derivato dal nome */
 var PALETTE = ["#6fb3a8","#c98f4a","#8d9ed6","#c4708f","#9db85a","#57a0c4","#b78bd0","#d0a44c"];
 /* la posizione nella lista determina il colore: primo = più necessario */
+/* Stabile → verde, verso il rosso man mano che l'entrata è meno prevedibile */
+function classeStabilita(v){
+  var i=S.config.stabilita.indexOf(v);
+  if(i<0) return "";
+  var n=S.config.stabilita.length;
+  if(n<=1) return "s0";
+  return "s"+Math.round(i/(n-1)*3);
+}
 function classeNecessita(v){
   var i=S.config.necessita.indexOf(v);
   if(i<0) return "";
@@ -934,6 +969,7 @@ function defaults(){
       argomenti:["Stipendio","Alimentari","Casa","Bollette","Trasporti","Salute","Svago","Abbonamenti","Shopping","Ristoranti","Viaggi","Risparmio","Investimenti","Altro"],
       portafogli:["Conto corrente","Contanti","Carta di credito","Prepagata","PayPal"],
       necessita:["Necessaria","Utile","Superflua"],
+      stabilita:["Stabile","Saltuario","Una tantum","Non classificabile"],
       allocazioni:["Fondo di emergenza","Casa","Trading","Investimenti","Riscatto auto","Non allocato"],
       saldiIniziali:{"Fondo di emergenza":0,"Casa":0,"Trading":0,"Investimenti":0,"Riscatto auto":0,"Non allocato":0},
       obiettivi:{"Fondo di emergenza":0,"Casa":0,"Trading":0,"Investimenti":0,"Riscatto auto":0,"Non allocato":0},
@@ -982,6 +1018,9 @@ function load(){
     if(!d.config.statoFondi || typeof d.config.statoFondi!=="object") d.config.statoFondi = {};
     if(!Array.isArray(d.config.necessita) || !d.config.necessita.length){
       d.config.necessita = defaults().config.necessita.slice();
+    }
+    if(!Array.isArray(d.config.stabilita) || !d.config.stabilita.length){
+      d.config.stabilita = defaults().config.stabilita.slice();
     }
     if(!Array.isArray(d.transactions)) d.transactions = [];
     /* schema 2: gli obiettivi erano percentuali, ora sono importi in euro */
@@ -1188,7 +1227,10 @@ var F = {data:{da:"",a:""}, importo:{min:"",max:"",tipi:[]},
 
 function valoreColonna(t, col){
   if(col==="allocazione") return t.tipo==="Giroconto" ? fondoDi(t) : fondoDi(t);
-  if(col==="necessita") return (t.necessita && t.necessita!=="—") ? t.necessita : "—";
+  if(col==="necessita"){
+    if(t.tipo==="Entrata") return t.stabilita || "—";
+    return (t.necessita && t.necessita!=="—") ? t.necessita : "—";
+  }
   if(col==="portafoglio") return t.portafoglio || "—";
   if(col==="argomento") return t.tipo==="Giroconto" ? "Giroconto" : (t.argomento || "—");
   return t[col] || "";
@@ -1352,6 +1394,7 @@ function renderMovimenti(){
     th.classList.toggle("attivo", attivi.indexOf(th.dataset.col)>=0);
   });
   $("btnResetF").style.display = (attivi.length || $("q").value.trim()) ? "" : "none";
+  aggiornaSegTipo();
 
   var all=txOf(year,month);
   var inc=sumBy(all,"Entrata"), out=sumBy(all,"Uscita"), net=inc-out;
@@ -1444,10 +1487,18 @@ function renderMovimenti(){
     }
     tr.appendChild(al);
 
-    var nc=cella("Necessità");
-    if(t.necessita && t.necessita!=="—") nc.appendChild(el("span","tag "+classeNecessita(t.necessita),t.necessita));
-    else if(t.tipo==="Uscita" && !t.necessita) nc.appendChild(el("span","da-compilare","da compilare"));
-    else { nc.className="vuoto"; nc.textContent="—"; }
+    var nc;
+    if(t.tipo==="Entrata"){
+      nc=cella("Stabilità");
+      if(t.stabilita) nc.appendChild(el("span","tag "+classeStabilita(t.stabilita),t.stabilita));
+      else nc.appendChild(el("span","da-compilare","da compilare"));
+    } else if(t.tipo==="Uscita"){
+      nc=cella("Necessità");
+      if(t.necessita && t.necessita!=="—") nc.appendChild(el("span","tag "+classeNecessita(t.necessita),t.necessita));
+      else nc.appendChild(el("span","da-compilare","da compilare"));
+    } else {
+      nc=cella("Necessità","vuoto"); nc.textContent="—";
+    }
     tr.appendChild(nc);
 
     var tools=cella("","azioni"), wrap=el("div","row-tools");
@@ -1471,6 +1522,21 @@ function renderMovimenti(){
   rest.innerHTML='<span class="pos" style="font-family:var(--mono)">'+money(fin)+' in entrata</span> <span class="dim">·</span> <span class="neg" style="font-family:var(--mono)">'+money(fout)+' in uscita</span>';
   ftr.appendChild(rest); foot.appendChild(ftr);
 }
+document.getElementById("segTipo").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-t]"); if(!b) return;
+  var t=b.dataset.t;
+  F.importo.tipi = t ? [t] : [];
+  renderMovimenti();
+});
+/* il selettore rapido riflette sempre il filtro della colonna Importo */
+function aggiornaSegTipo(){
+  var sel=F.importo.tipi;
+  var attivo = (sel.length===1) ? sel[0] : "";
+  [].forEach.call(document.querySelectorAll("#segTipo button"),function(b){
+    b.classList.toggle("on", b.dataset.t===attivo);
+    b.classList.toggle("misto", attivo==="" && sel.length>0 && b.dataset.t==="");
+  });
+}
 $("q").addEventListener("input",renderMovimenti);
 $("btnResetF").addEventListener("click",azzeraFiltri);
 
@@ -1478,7 +1544,8 @@ $("btnResetF").addEventListener("click",azzeraFiltri);
 function aggiornaFormTipo(){
   var g = formTipo==="Giroconto";
   $("wOrig").style.display = g ? "" : "none";
-  $("wNec").style.display = g ? "none" : "";
+  $("wNec").style.display = formTipo==="Uscita" ? "" : "none";
+  $("wStab").style.display = formTipo==="Entrata" ? "" : "none";
   $("wArg").style.display = g ? "none" : "";
   $("wPort").style.display = g ? "none" : "";
   $("lblAlloc").textContent = g ? "Versa nel fondo"
@@ -1504,14 +1571,15 @@ function openTx(id){
   fillSelect($("fPortM"), S.config.portafogli, "—", t?t.portafoglio:S.config.portafogli[0]);
   fillSelect($("fAllocM"), S.config.allocazioni, "— "+FONDO_BASE, t?(t.allocazione||""):"");
   fillSelect($("fOrig"), S.config.allocazioni, null, t?fondoOrigine(t):FONDO_BASE);
-  var nec=S.config.necessita.slice();
-  fillSelect($("fNec"), nec, null, null);
+  fillSelect($("fNec"), S.config.necessita, null, null);
   var onA=document.createElement("option"); onA.value="—"; onA.textContent="Non applicabile";
   $("fNec").appendChild(onA);
+  fillSelect($("fStab"), S.config.stabilita, null, null);
   $("fData").value = t ? t.data : ymd(new Date(year, month, Math.min(new Date().getDate(), new Date(year,month+1,0).getDate())));
   $("fImporto").value = t ? Math.abs(+t.importo||0) : "";
   $("fDett").value = t ? (t.dettaglio||"") : "";
   $("fNec").value = t ? (t.necessita||"—") : (S.config.necessita[0]||"—");
+  $("fStab").value = (t && t.stabilita) ? t.stabilita : (S.config.stabilita[0]||"");
   aggiornaFormTipo();
   $("txMask").classList.add("on");
   setTimeout(function(){ $("fImporto").focus(); },40);
@@ -1548,6 +1616,7 @@ $("txSave").addEventListener("click",function(){
     allocazione: alloc,
     necessita: formTipo==="Uscita" ? $("fNec").value : "—"
   };
+  if(formTipo==="Entrata") rec.stabilita=$("fStab").value;
   if(formTipo==="Giroconto") rec.origine=$("fOrig").value;
   if(editingId){
     var vecchio=tx().find(function(t){ return t.id===editingId; });
@@ -1678,7 +1747,10 @@ function rimuoviVersamenti(y,m){
 function vociIncomplete(y,m){
   return txOf(y,m).filter(function(t){
     if(t.tipo==="Giroconto") return false;
-    return !t.argomento || !t.dettaglio || (t.tipo==="Uscita" && !t.necessita);
+    if(!t.argomento || !t.dettaglio) return true;
+    if(t.tipo==="Uscita" && !t.necessita) return true;
+    if(t.tipo==="Entrata" && !t.stabilita) return true;
+    return false;
   });
 }
 function renderIncomplete(){
@@ -1688,16 +1760,18 @@ function renderIncomplete(){
   card.style.display="";
   box.innerHTML="";
 
-  var mancanti={argomento:0, dettaglio:0, necessita:0};
+  var mancanti={argomento:0, dettaglio:0, necessita:0, stabilita:0};
   lista.forEach(function(t){
     if(!t.argomento) mancanti.argomento++;
     if(!t.dettaglio) mancanti.dettaglio++;
     if(t.tipo==="Uscita" && !t.necessita) mancanti.necessita++;
+    if(t.tipo==="Entrata" && !t.stabilita) mancanti.stabilita++;
   });
   var pezzi=[];
   if(mancanti.argomento) pezzi.push(mancanti.argomento+" senza argomento");
   if(mancanti.dettaglio) pezzi.push(mancanti.dettaglio+" senza dettaglio");
   if(mancanti.necessita) pezzi.push(mancanti.necessita+" senza necessità");
+  if(mancanti.stabilita) pezzi.push(mancanti.stabilita+" senza stabilità");
 
   var p=el("p","hint");
   p.style.margin="0 0 12px";
@@ -2510,6 +2584,7 @@ function renderImpostazioni(){
   chips("chipsArg","argomenti");
   chips("chipsPort","portafogli");
   chips("chipsNec","necessita");
+  chips("chipsStab","stabilita");
 }
 
 function campoValore(v, onChange){
@@ -2789,8 +2864,9 @@ function chips(containerId, key){
   var lista=S.config[key];
   lista.forEach(function(v,i){
     var c=el("div","chip");
-    if(key==="necessita"){
-      var col=el("span","dot"); col.className="dot "+classeNecessita(v);
+    if(key==="necessita" || key==="stabilita"){
+      var col=el("span","dot");
+      col.className="dot "+(key==="necessita" ? classeNecessita(v) : classeStabilita(v));
       col.style.cssText="width:8px;height:8px;border-radius:2px;margin-right:2px;border:1px solid currentColor";
       c.appendChild(col);
       var su=el("button",null,"↑"); su.title="Sposta prima"; su.disabled=(i===0);
@@ -2805,9 +2881,10 @@ function chips(containerId, key){
       var used = tx().some(function(t){
         return key==="argomenti" ? t.argomento===v
              : key==="portafogli" ? t.portafoglio===v
+             : key==="stabilita" ? t.stabilita===v
              : t.necessita===v;
       });
-      if(key==="necessita" && lista.length<=1){ toast("Deve restare almeno un livello"); return; }
+      if((key==="necessita"||key==="stabilita") && lista.length<=1){ toast("Deve restare almeno un livello"); return; }
       if(used && !confirm("«"+v+"» è usato da alcune voci. Rimuoverlo comunque? Le voci restano invariate.")) return;
       S.config[key]=lista.filter(function(x){ return x!==v; });
       save(); renderImpostazioni();
@@ -2818,7 +2895,9 @@ function chips(containerId, key){
 document.addEventListener("click",function(e){
   var b=e.target.closest("button[data-add]"); if(!b) return;
   var key=b.dataset.add;
-  var inp = key==="argomenti" ? $("newArg") : key==="portafogli" ? $("newPort") : $("newNec");
+  var inp = key==="argomenti" ? $("newArg")
+          : key==="portafogli" ? $("newPort")
+          : key==="stabilita" ? $("newStab") : $("newNec");
   var v=inp.value.trim().replace(/\s+/g," "); if(!v) return;
   if(S.config[key].some(function(x){ return x.toLowerCase()===v.toLowerCase(); })){ toast("Esiste già"); return; }
   S.config[key].push(v); inp.value=""; save(); renderImpostazioni(); toast("Aggiunto");
@@ -2956,6 +3035,7 @@ function normalize(r){
   };
   /* testo grezzo dell'estratto: resta come promemoria finché non compili il dettaglio */
   if(r.originale) rec.originale = String(r.originale).trim();
+  if(tipo==="Entrata" && r.stabilita) rec.stabilita = String(r.stabilita).trim();
   if(tipo==="Giroconto"){
     rec.origine = r.origine || "";
     if(r.portafoglioDest) rec.portafoglioDest = String(r.portafoglioDest).trim();
