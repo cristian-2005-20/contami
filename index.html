@@ -413,6 +413,13 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
   padding:11px 16px;font-size:13px;display:none;
 }
 .warn.on{display:block}
+.diag{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
+.diag-riga{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.4}
+.diag-segno{flex:0 0 auto;font-weight:700;width:14px;text-align:center}
+.diag-riga.ok .diag-segno{color:var(--in)}
+.diag-riga.ko .diag-segno{color:var(--out)}
+.diag-riga.ko{color:#e8d49a}
+.diag-nota{color:var(--muted);font-size:12px;margin-top:2px;word-break:break-word}
 .passi{margin:0;padding-left:20px;font-size:13.5px;line-height:1.7}
 .passi li{margin-bottom:5px}
 .passi b{color:var(--brass)}
@@ -3059,24 +3066,107 @@ $("btnInstalla").addEventListener("click",function(){
   mostraIstruzioniInstalla();
 });
 
+function esitoRiga(stato, testo, nota){
+  var r=el("div","diag-riga "+stato);
+  r.appendChild(el("span","diag-segno", stato==="ok"?"\u2713":stato==="ko"?"\u2717":"\u2022"));
+  var c=el("div");
+  c.appendChild(el("div",null,testo));
+  if(nota) c.appendChild(el("div","diag-nota",nota));
+  r.appendChild(c);
+  return r;
+}
+
+/* Verifica uno per uno i requisiti che Chrome pretende, così si vede
+   quale manca invece di tirare a indovinare. */
 function mostraIstruzioniInstalla(){
   var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  $("instrTitolo").textContent = "Installare l\u0027app";
-  $("instrCorpo").innerHTML = ios
-    ? '<p class="hint" style="margin:0 0 12px">Su iPhone l\u0027installazione si fa da Safari:</p>'+
-      '<ol class="passi"><li>apri questa pagina con <b>Safari</b></li>'+
-      '<li>tocca il pulsante <b>Condividi</b> in basso</li>'+
-      '<li>scegli <b>Aggiungi a Home</b></li></ol>'
-    : '<p class="hint" style="margin:0 0 12px">Chrome non sta proponendo l\u0027installazione. Puoi farla a mano:</p>'+
-      '<ol class="passi">'+
-      '<li>tocca il menu <b>\u22ee</b> in alto a destra in Chrome</li>'+
-      '<li>scegli <b>Installa app</b> oppure <b>Aggiungi a schermata Home</b></li>'+
-      '</ol>'+
-      '<p class="hint" style="margin:12px 0 0">Se la voce non c\u0027è, di solito significa che <b>l\u0027app è già installata</b>: '+
-      'cercala nel cassetto delle applicazioni. Altrimenti verifica di essere su un indirizzo che inizia per <b>https://</b> '+
-      'e non su un file aperto dalla memoria del telefono.</p>';
+  $("instrTitolo").textContent = "Perché non compare l\u0027installazione";
+  var box=$("instrCorpo");
+  box.innerHTML="";
+  var esiti=el("div","diag");
+  box.appendChild(esiti);
+  var attesa=el("p","hint"); attesa.textContent="Controllo in corso\u2026";
+  box.appendChild(attesa);
   $("instrMask").classList.add("on");
+
+  var problemi=[];
+  function aggiungi(stato,testo,nota){
+    esiti.appendChild(esitoRiga(stato,testo,nota));
+    if(stato==="ko") problemi.push(testo);
+  }
+
+  /* 1. connessione sicura */
+  var https = location.protocol==="https:" || location.hostname==="localhost";
+  aggiungi(https?"ok":"ko", https?"Indirizzo sicuro (https)":"Serve un indirizzo https://",
+           https?null:"Ora sei su "+location.protocol+"//"+location.hostname);
+
+  /* 2. già installata? */
+  var inApp = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
+  if(inApp) aggiungi("ok","Sei già dentro l\u0027app installata");
+
+  /* 3. service worker */
+  if(!("serviceWorker" in navigator)){
+    aggiungi("ko","Il browser non supporta i service worker","Usa Chrome su Android");
+  } else {
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      if(regs.length) aggiungi("ok","Service worker attivo");
+      else aggiungi("ko","Service worker non registrato","Il file sw.js manca o è in una cartella diversa");
+    });
+  }
+
+  /* 4. manifest raggiungibile e valido */
+  var link=document.querySelector('link[rel="manifest"]');
+  if(!link){
+    aggiungi("ko","Manifest non collegato nella pagina");
+    finito();
+  } else {
+    fetch(link.href).then(function(r){
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      return r.json();
+    }).then(function(m){
+      aggiungi("ok","Manifest letto correttamente");
+      if(!m.name && !m.short_name) aggiungi("ko","Manca il nome nel manifest");
+      if(["standalone","fullscreen","minimal-ui"].indexOf(m.display)<0)
+        aggiungi("ko","display non valido: "+m.display);
+      var i192=(m.icons||[]).some(function(i){ return (i.sizes||"").indexOf("192x192")>=0; });
+      var i512=(m.icons||[]).some(function(i){ return (i.sizes||"").indexOf("512x512")>=0; });
+      if(!i192 || !i512) aggiungi("ko","Servono icone da 192 e 512 pixel");
+      /* le icone devono esistere davvero */
+      var base=link.href.replace(/[^/]*$/,"");
+      var da=(m.icons||[]).map(function(i){ return new URL(i.src, base).href; });
+      return Promise.all(da.map(function(u){
+        return fetch(u,{method:"HEAD"}).then(function(r){ return {u:u,ok:r.ok}; })
+                                       .catch(function(){ return {u:u,ok:false}; });
+      }));
+    }).then(function(ris){
+      if(ris){
+        var rotte=ris.filter(function(x){ return !x.ok; });
+        if(rotte.length) aggiungi("ko", rotte.length+" icone non trovate",
+          rotte.map(function(x){ return x.u.split("/").pop(); }).join(", "));
+        else aggiungi("ok","Tutte le icone raggiungibili");
+      }
+      finito();
+    }).catch(function(e){
+      aggiungi("ko","Manifest non leggibile", String(e.message||e));
+      finito();
+    });
+  }
+
+  function finito(){
+    setTimeout(function(){
+      attesa.innerHTML = problemi.length
+        ? "<b>Correggi i punti in rosso</b>, poi ricarica la pagina."
+        : (ios
+          ? "Tutto in regola. Su iPhone l\u0027installazione si fa da Safari: <b>Condividi</b> \u2192 <b>Aggiungi a Home</b>."
+          : "Tutto in regola: Chrome dovrebbe permettere l\u0027installazione dal menu <b>\u22ee</b> \u2192 <b>Installa app</b>.<br><br>"+
+            "Se la voce non c\u0027è, prova in quest\u0027ordine:<br>"+
+            "<b>1.</b> ricarica la pagina trascinando verso il basso<br>"+
+            "<b>2.</b> visita almeno due volte il sito a qualche secondo di distanza: Chrome a volte lo pretende<br>"+
+            "<b>3.</b> Impostazioni di Chrome \u2192 Privacy \u2192 Cancella dati di navigazione \u2192 solo <i>immagini e file memorizzati</i>, poi riapri l\u0027indirizzo");
+    },700);
+  }
 }
+
 $("instrChiudi").addEventListener("click",function(){ $("instrMask").classList.remove("on"); });
 $("instrMask").addEventListener("click",function(e){ if(e.target===this) this.classList.remove("on"); });
 
