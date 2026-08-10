@@ -717,7 +717,8 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
           <table class="mob-schede">
             <thead><tr>
               <th>Mese</th><th class="num">Entrate</th><th class="num">Uscite</th>
-              <th class="num">Saldo</th><th class="num">Risparmio</th><th class="num">Voci</th>
+              <th class="num">Saldo</th><th class="num">Risparmio</th>
+              <th class="num" title="Numero di entrate / uscite">Voci&nbsp;E/U</th>
             </tr></thead>
             <tbody id="sumBody"></tbody>
             <tfoot id="sumFoot"></tfoot>
@@ -1704,7 +1705,6 @@ function openTx(id){
   $("fStab").value = (t && t.stabilita) ? t.stabilita : (S.config.stabilita[0]||"");
   aggiornaFormTipo();
   $("txMask").classList.add("on");
-  setTimeout(function(){ $("fImporto").focus(); },40);
 }
 function closeTx(){ $("txMask").classList.remove("on"); editingId=null; }
 $("btnNew").addEventListener("click",function(){ openTx(null); });
@@ -2001,7 +2001,13 @@ function monthlyTotals(y){
   var out=[];
   for(var m=0;m<12;m++){
     var l=txOf(y,m), i=sumBy(l,"Entrata"), o=sumBy(l,"Uscita");
-    out.push({m:m,inc:i,out:o,net:i-o,n:l.length});
+    var nIn=0, nOut=0, nGir=0;
+    l.forEach(function(t){
+      if(t.tipo==="Entrata") nIn++;
+      else if(t.tipo==="Uscita") nOut++;
+      else nGir++;
+    });
+    out.push({m:m,inc:i,out:o,net:i-o,n:l.length,nIn:nIn,nOut:nOut,nGir:nGir});
   }
   return out;
 }
@@ -2058,7 +2064,15 @@ function renderRiepilogo(){
     tr.appendChild(cella("Uscite","num "+(r.out?"neg":"dim"), r.out?money(r.out):"—"));
     tr.appendChild(cella("Saldo","num "+(r.n?(r.net>=0?"pos":"neg"):"dim"), r.n?money(r.net):"—"));
     tr.appendChild(cella("Risparmio","num dim", r.inc>0?pct(r.net/r.inc*100):"—"));
-    tr.appendChild(cella("Voci","num dim", r.n||"—"));
+    var vc=cella("Voci","num");
+    if(!r.n){ vc.className="num dim"; vc.textContent="—"; }
+    else {
+      vc.innerHTML='<span class="pos">'+r.nIn+'</span><span class="dim"> / </span>'+
+                   '<span class="neg">'+r.nOut+'</span>'+
+                   (r.nGir?'<span class="dim"> / '+r.nGir+'</span>':'');
+      vc.title=r.nIn+" entrate, "+r.nOut+" uscite"+(r.nGir?", "+r.nGir+" giroconti":"");
+    }
+    tr.appendChild(vc);
     b.appendChild(tr);
   });
   if(!b.dataset.bound){
@@ -2627,7 +2641,6 @@ function openSnap(acctId, snapId){
   $("iVersato").value = sn? (versatoDi(sn)||"") : "";
   $("iNota").value = sn? (sn.nota||"") : "";
   $("invMask").classList.add("on");
-  setTimeout(function(){ $("iSaldo").focus(); },40);
 }
 function closeSnap(){ $("invMask").classList.remove("on"); editingAcct=null; editingSnap=null; }
 $("invCancel").addEventListener("click",closeSnap);
