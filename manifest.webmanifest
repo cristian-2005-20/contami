@@ -1,29 +1,24 @@
 {
-  "id": "/libromastro/v2"
-  "name": "Libro Mastro — Finanze personali",
+  "name": "Libro Mastro â€” Finanze personali",
   "short_name": "Libro Mastro",
   "description": "Gestione di entrate, uscite, fondi di allocazione e investimenti. I dati restano sul dispositivo.",
   "lang": "it",
-  "dir": "ltr",
-  "start_url": "./index.html?v=2",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f1720",
   "theme_color": "#0f1720",
-  "categories": ["finance", "productivity", "utilities"],
   "icons": [
     {
       "src": "icone/icona-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
       "src": "icone/icona-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
       "src": "icone/maskable-192.png",
@@ -35,6 +30,10 @@
       "src": "icone/maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}      "type": "image/png",
       "purpose": "maskable"
     }
   ],
