@@ -936,6 +936,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
     <h3 id="instrTitolo">Installare l'app</h3>
     <div id="instrCorpo"></div>
     <div class="modal-foot">
+      <button class="btn danger" id="instrPulisci">Svuota la cache e ricarica</button>
       <button class="btn primary" id="instrChiudi">Ho capito</button>
     </div>
   </div>
@@ -3120,7 +3121,10 @@ function mostraIstruzioniInstalla(){
     aggiungi("ko","Manifest non collegato nella pagina");
     finito();
   } else {
-    fetch(link.href).then(function(r){
+    /* Query unica: così la richiesta non incrocia nessuna copia salvata
+       e vediamo davvero cosa c'è online. */
+    var url=link.href + (link.href.indexOf("?")<0?"?":"&") + "diag=" + Date.now();
+    fetch(url, {cache:"reload"}).then(function(r){
       if(!r.ok) throw new Error("HTTP "+r.status);
       return r.json();
     }).then(function(m){
@@ -3148,6 +3152,7 @@ function mostraIstruzioniInstalla(){
       finito();
     }).catch(function(e){
       aggiungi("ko","Manifest non leggibile", String(e.message||e));
+      aggiungi("attesa","Se il file su GitHub è corretto, il browser sta usando una copia vecchia salvata: usa il pulsante qui sotto.");
       finito();
     });
   }
@@ -3168,6 +3173,27 @@ function mostraIstruzioniInstalla(){
 }
 
 $("instrChiudi").addEventListener("click",function(){ $("instrMask").classList.remove("on"); });
+
+/* Rimuove service worker e cache: l'app riparte dai file veri.
+   I movimenti non sono toccati, stanno altrove. */
+$("instrPulisci").addEventListener("click",function(){
+  var b=this;
+  b.disabled=true; b.textContent="Pulizia in corso…";
+  var passi=[];
+  if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+    passi.push(navigator.serviceWorker.getRegistrations().then(function(regs){
+      return Promise.all(regs.map(function(r){ return r.unregister(); }));
+    }));
+  }
+  if(window.caches && caches.keys){
+    passi.push(caches.keys().then(function(k){
+      return Promise.all(k.map(function(n){ return caches.delete(n); }));
+    }));
+  }
+  Promise.all(passi).catch(function(){}).then(function(){
+    setTimeout(function(){ location.reload(true); }, 400);
+  });
+});
 $("instrMask").addEventListener("click",function(e){ if(e.target===this) this.classList.remove("on"); });
 
 /* dentro l'app installata il pulsante non serve */
