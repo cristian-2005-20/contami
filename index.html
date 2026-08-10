@@ -307,6 +307,8 @@ tfoot td{
 .regola-corpo th{background:var(--panel)}
 
 /* ── Barre ──────────────────────────────── */
+.conteggio{color:var(--muted);white-space:nowrap}
+.conteggio b{font-weight:400}
 .mini-bar{
   display:inline-block;width:52px;height:6px;background:var(--line);
   border-radius:1px;margin-right:8px;vertical-align:1px;overflow:hidden;
@@ -2067,9 +2069,9 @@ function renderRiepilogo(){
     var vc=cella("Voci","num");
     if(!r.n){ vc.className="num dim"; vc.textContent="—"; }
     else {
-      vc.innerHTML='<span class="pos">'+r.nIn+'</span><span class="dim"> / </span>'+
-                   '<span class="neg">'+r.nOut+'</span>'+
-                   (r.nGir?'<span class="dim"> / '+r.nGir+'</span>':'');
+      vc.innerHTML='<span class="conteggio"><b class="pos">'+r.nIn+'</b> / '+
+                   '<b class="neg">'+r.nOut+'</b>'+
+                   (r.nGir?' / <b>'+r.nGir+'</b>':'')+'</span>';
       vc.title=r.nIn+" entrate, "+r.nOut+" uscite"+(r.nGir?", "+r.nGir+" giroconti":"");
     }
     tr.appendChild(vc);
