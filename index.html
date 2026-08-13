@@ -8,11 +8,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Libro Mastro">
+<meta name="apple-mobile-web-app-title" content="Contami">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icone/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="icone/apple-touch-icon.png">
-<title>Libro Mastro — Gestione finanze</title>
+<title>Contami: Spese e Budget</title>
 <style>
 /* ─────────────────────────────────────────────
    Token system
@@ -69,8 +69,8 @@ h1,h2,h3{margin:0;font-weight:600}
 }
 .brand{padding:0 20px 24px;border-bottom:1px solid var(--line-soft);margin-bottom:14px}
 .brand .mark{
-  font-family:var(--display);font-size:20px;letter-spacing:.02em;
-  display:block;line-height:1.15;
+  font-family:var(--display);font-size:23px;letter-spacing:.01em;
+  display:block;line-height:1.1;
 }
 .brand .sub{
   display:block;margin-top:5px;
@@ -612,7 +612,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 <div class="app">
   <aside class="rail">
     <div class="brand">
-      <span class="mark">Libro<br>Mastro</span>
+      <span class="mark">Contami</span>
       <span class="sub">Finanze personali</span>
     </div>
     <nav class="nav" id="nav">
@@ -968,7 +968,8 @@ var store = (function(){
     };
   }
 })();
-var KEY = "libromastro.v1";
+var KEY = "contami.v1";
+var KEY_PRECEDENTE = "libromastro.v1";   /* nome usato prima: i dati vanno recuperati */
 
 /* ═══════════════════════════════════════════════
    Stato
@@ -1064,6 +1065,12 @@ function pulisciAllocazioni(d){
 function load(){
   try{
     var raw = store.getItem(KEY);
+    /* L'app si chiamava diversamente: se troviamo i vecchi dati li portiamo
+       sul nuovo nome, senza cancellare l'originale per sicurezza. */
+    if(!raw && KEY_PRECEDENTE){
+      var vecchi = store.getItem(KEY_PRECEDENTE);
+      if(vecchi){ raw = vecchi; store.setItem(KEY, vecchi); }
+    }
     if(!raw) return defaults();
     var d = JSON.parse(raw), base = defaults();
     var schemaPrec = (d.config && Number(d.config.schema)) || 0;
@@ -3061,7 +3068,7 @@ function doExport(){
   var blob=new Blob([payload],{type:"application/json"});
   var a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
-  a.download="libromastro-"+ymd(new Date())+".json";
+  a.download="contami-"+ymd(new Date())+".json";
   document.body.appendChild(a); a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },0);
   toast("Backup scaricato");
