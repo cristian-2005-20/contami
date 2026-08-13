@@ -1,6 +1,6 @@
 {
-  "name": "Libro Mastro — Finanze personali",
-  "short_name": "Libro Mastro",
+  "name": "Contami: Spese e Budget",
+  "short_name": "Contami",
   "description": "Gestione di entrate, uscite, fondi di allocazione e investimenti. I dati restano sul dispositivo.",
   "lang": "it",
   "start_url": "./",
