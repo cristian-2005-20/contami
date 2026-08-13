@@ -325,12 +325,26 @@ tr.fondo-completato td{
   box-shadow:inset 3px 0 0 var(--in);
 }
 tr.fondo-completato:hover td{background:rgba(79,178,134,.2)}
+tr.port-archiviato td{
+  opacity:.45;background:var(--panel-2);
+  border-top:1px solid var(--line);
+}
+tr.port-archiviato:hover td{opacity:.75;background:var(--panel-2)}
+tr.port-archiviato + tr.port-archiviato td{border-top:0}
+tr.port-archiviato .tag{margin-left:9px}
 tr.fondo-concluso td{
   opacity:.45;background:var(--panel-2);
   border-top:1px solid var(--line);
 }
 tr.fondo-concluso:hover td{opacity:.75;background:var(--panel-2)}
-tr.fondo-concluso + tr.fondo-concluso td{border-top:0}
+tr.fondo-concluso + tr.port-archiviato td{
+  opacity:.45;background:var(--panel-2);
+  border-top:1px solid var(--line);
+}
+tr.port-archiviato:hover td{opacity:.75;background:var(--panel-2)}
+tr.port-archiviato + tr.port-archiviato td{border-top:0}
+tr.port-archiviato .tag{margin-left:9px}
+tr.fondo-concluso td{border-top:0}
 .tag.done{border-color:#3a6b57;color:#7fc7a5;background:rgba(79,178,134,.12);margin-left:9px}
 tr.fondo-concluso .tag{margin-left:9px}
 .btn.ok{border-color:#3a6b57;color:#7fc7a5}
@@ -742,7 +756,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
           </table>
         </div>
         <div class="quadratura" id="quadraturaPort"></div>
-        <p class="hint">Il saldo è: valore iniziale + entrate − uscite, più gli spostamenti da un portafoglio all\u0027altro. I valori di partenza si impostano in Impostazioni.</p>
+        <p class="hint">Ogni portafoglio parte dal valore che imposti in Impostazioni e si aggiorna da solo con i movimenti. Se dopo qualche mese il saldo non torna, premi <b>Correggi</b>: fissi la cifra reale e il conteggio riparte da lì, senza dover cercare l'errore.</p>
       </div>
 
       <div class="card">
@@ -757,7 +771,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
             <tfoot id="portFoot"></tfoot>
           </table>
         </div>
-        <p class="hint">Il saldo parte dal valore iniziale che imposti una volta sola, e si aggiorna con ogni movimento. Se dopo qualche mese non torna, usa <b>Correggi</b>: fissi il valore vero a oggi e il conteggio riparte da lì, senza dover cercare l'errore.</p>
+        <p class="hint">Ogni portafoglio parte dal valore che imposti in Impostazioni e si aggiorna da solo con i movimenti. Se dopo qualche mese il saldo non torna, premi <b>Correggi</b>: fissi la cifra reale e il conteggio riparte da lì, senza dover cercare l'errore.</p>
       </div>
 
       <div class="card">
@@ -862,7 +876,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 
       <div class="card">
         <h2>Portafogli</h2>
-        <p class="hint" style="margin:0 0 12px">Il valore iniziale è quanto c\u0027era in ciascun portafoglio prima del primo movimento registrato qui. Impostalo una volta e il saldo resta aggiornato da solo.</p>
+        <p class="hint" style="margin:0 0 12px">Il saldo iniziale è quanto c'era nel portafoglio <b>prima</b> del primo movimento che hai registrato. Si imposta una volta sola: da lì in poi il saldo si aggiorna da solo.</p>
         <div class="tw tw-schede">
           <table class="mob-schede">
             <thead><tr><th>Portafoglio</th><th class="num" style="width:180px">Valore iniziale €</th><th class="num" style="width:150px">Saldo attuale</th><th style="width:110px"></th></tr></thead>
@@ -1084,6 +1098,7 @@ function defaults(){
       argomentiEntrate:["Stipendio","Rimborso","Regalo","Vendita","Interessi","Altro"],
       portafogli:["Conto corrente","Contanti","Carta di credito","Prepagata","PayPal"],
       saldiInizialiPortafogli:{},
+      portafogliArchiviati:[],
       necessita:["Necessaria","Utile","Superflua"],
       stabilita:["Stabile","Saltuario","Una tantum","Non classificabile"],
       allocazioni:["Fondo di emergenza","Casa","Trading","Investimenti","Riscatto auto","Non allocato"],
@@ -1092,6 +1107,7 @@ function defaults(){
       anni:[],
       statoFondi:{},
       saldiInizialiPortafogli:{},
+      portafogliArchiviati:[],
       regole:[]
     }
   };
@@ -1252,6 +1268,7 @@ function load(){
     }
     if(!Array.isArray(d.rettifiche)) d.rettifiche = [];
     if(!d.config.saldiInizialiPortafogli) d.config.saldiInizialiPortafogli = {};
+    if(!Array.isArray(d.config.portafogliArchiviati)) d.config.portafogliArchiviati = [];
     d.config.schema = 8;
     pulisciAllocazioni(d);
     if(!Array.isArray(d.conti) || !d.conti.length) d.conti = base.conti;
@@ -1779,9 +1796,14 @@ function openTx(id){
   formTipo = t ? t.tipo : "Uscita";
   [].forEach.call(document.querySelectorAll("#tipoSeg button"),function(b){ b.classList.toggle("on", b.dataset.tipo===formTipo); });
   riempiArgomenti(t?t.argomento:"");
-  var listaPort=perFrequenza(S.config.portafogli,"portafoglio");
+  /* solo i portafogli attivi, ma se stai modificando una voce vecchia
+     che ne usa uno archiviato, quello resta selezionabile */
+  var listaPort=perFrequenza(portafogliAttivi(),"portafoglio");
+  if(t && t.portafoglio && listaPort.indexOf(t.portafoglio)<0) listaPort=listaPort.concat([t.portafoglio]);
+  var listaDest=listaPort.slice();
+  if(t && t.portafoglioDest && listaDest.indexOf(t.portafoglioDest)<0) listaDest=listaDest.concat([t.portafoglioDest]);
   fillSelect($("fPortM"), listaPort, "—", t?t.portafoglio:(listaPort[0]||""));
-  fillSelect($("fPortDest"), listaPort, "— nessuno", t?(t.portafoglioDest||""):"");
+  fillSelect($("fPortDest"), listaDest, "— nessuno", t?(t.portafoglioDest||""):"");
   fillSelect($("fAllocM"), perFrequenza(S.config.allocazioni,"allocazione"), "— "+FONDO_BASE,
              t?(t.allocazione||""):"");
   fillSelect($("fOrig"), perFrequenza(S.config.allocazioni,"origine"), null,
@@ -2184,6 +2206,32 @@ function scartoTotaleRettifiche(){
   return Math.round(rettifiche().reduce(function(a,r){ return a+scartoRettifica(r); },0)*100)/100;
 }
 
+/* Un portafoglio archiviato resta nei movimenti passati ma non si
+   propone più quando registri: sparisce dai menu e scende in fondo. */
+function portafoglioArchiviato(p){
+  return (S.config.portafogliArchiviati||[]).indexOf(p)>=0;
+}
+function portafogliAttivi(){
+  return S.config.portafogli.filter(function(p){ return !portafoglioArchiviato(p); });
+}
+function portafogliOrdinati(){
+  var att=[], arc=[];
+  S.config.portafogli.forEach(function(p){
+    (portafoglioArchiviato(p) ? arc : att).push(p);
+  });
+  return att.concat(arc);
+}
+function archiviaPortafoglio(p, si){
+  S.config.portafogliArchiviati = S.config.portafogliArchiviati || [];
+  if(si){
+    if(!portafoglioArchiviato(p)) S.config.portafogliArchiviati.push(p);
+  } else {
+    S.config.portafogliArchiviati = S.config.portafogliArchiviati.filter(function(x){ return x!==p; });
+  }
+  save(); renderImpostazioni();
+  toast(si ? "«"+p+"» archiviato" : "«"+p+"» di nuovo attivo");
+}
+
 function totalePortafogli(){
   return Math.round(S.config.portafogli.reduce(function(a,p){
     return a+saldoPortafoglio(p); },0)*100)/100;
@@ -2434,6 +2482,7 @@ function renderPortafogli(){
 
   var saldi={}, tot=0;
   S.config.portafogli.forEach(function(p){ saldi[p]=saldoPortafoglio(p); tot+=saldi[p]; });
+  var elenco=portafogliOrdinati();
   tot=Math.round(tot*100)/100;
   var lordo=S.config.portafogli.reduce(function(a,p){ return a+Math.max(0,saldi[p]); },0);
 
@@ -2443,13 +2492,17 @@ function renderPortafogli(){
     tr0.appendChild(td0); body.appendChild(tr0); return;
   }
 
-  S.config.portafogli.forEach(function(p){
+  elenco.forEach(function(p){
     var v=saldi[p];
+    var arch=portafoglioArchiviato(p);
     var rs=rettifichePortafoglio(p);
     var ultima=rs.length?rs[rs.length-1]:null;
-    var tr=el("tr");
+    var tr=el("tr", arch?"port-archiviato":"");
 
-    tr.appendChild(cella("Portafoglio","testata",p));
+    var nm=cella("Portafoglio","testata");
+    nm.appendChild(document.createTextNode(p));
+    if(arch) nm.appendChild(el("span","tag","archiviato"));
+    tr.appendChild(nm);
     tr.appendChild(cella("Saldo","num testata "+(v<0?"neg":v>0?"pos":"dim"),money(v)));
     tr.appendChild(cella("Quota","num dim", lordo>0?pct(Math.max(0,v)/lordo*100):"—"));
 
@@ -2466,9 +2519,11 @@ function renderPortafogli(){
     tr.appendChild(uv);
 
     var az=cella("","azioni"), w=el("div","row-tools");
-    var b1=el("button","btn sm","Correggi");
-    b1.addEventListener("click",function(){ apriRettifica(p); });
-    w.appendChild(b1);
+    if(!arch){
+      var b1=el("button","btn sm","Correggi");
+      b1.addEventListener("click",function(){ apriRettifica(p); });
+      w.appendChild(b1);
+    }
     if(rs.length){
       var b2=el("button","btn sm ghost","Storico");
       b2.addEventListener("click",function(){ mostraStoricoRettifiche(p); });
@@ -3342,12 +3397,16 @@ function renderSetPortafogli(){
   body.innerHTML=""; foot.innerHTML="";
   var totIniz=0, totOggi=0;
 
-  S.config.portafogli.forEach(function(p){
+  portafogliOrdinati().forEach(function(p){
     var iniz=Number(S.config.saldiInizialiPortafogli[p])||0;
     var oggi=saldoPortafoglio(p);
+    var arch=portafoglioArchiviato(p);
     totIniz+=iniz; totOggi+=oggi;
-    var tr=el("tr");
-    tr.appendChild(cella("Portafoglio","testata",p));
+    var tr=el("tr", arch?"port-archiviato":"");
+    var nm=cella("Portafoglio","testata");
+    nm.appendChild(document.createTextNode(p));
+    if(arch) nm.appendChild(el("span","tag","archiviato"));
+    tr.appendChild(nm);
 
     var c1=cella("Saldo iniziale €","num");
     var i1=document.createElement("input");
@@ -3364,11 +3423,29 @@ function renderSetPortafogli(){
     var az=cella("","azioni"), w=el("div","row-tools");
     var n=tx().filter(function(t){
       return t.portafoglio===p || t.portafoglioDest===p; }).length;
+
+    if(arch){
+      var br=el("button","btn sm","Riattiva");
+      br.title="Torna disponibile quando registri un movimento";
+      br.addEventListener("click",function(){ archiviaPortafoglio(p,false); });
+      w.appendChild(br);
+    } else {
+      var ba=el("button","btn sm","Archivia");
+      var vuoto=Math.abs(oggi)<0.005;
+      ba.title = vuoto
+        ? "Lo toglie dai menu: resta nello storico ma non te lo propone più"
+        : "Contiene ancora "+money(oggi)+": svuotalo prima di archiviarlo";
+      ba.disabled = !vuoto;
+      ba.addEventListener("click",function(){ archiviaPortafoglio(p,true); });
+      w.appendChild(ba);
+    }
+
     var b=el("button","btn sm danger","Elimina");
     b.addEventListener("click",function(){
-      if(n && !confirm("\u00ab"+p+"\u00bb \u00e8 usato da "+n+" moviment"+(n===1?"o":"i")+
-                       ".\n\nRimuoverlo comunque? I movimenti restano invariati.")) return;
+      if(n && !confirm("«"+p+"» è usato da "+n+" moviment"+(n===1?"o":"i")+
+                       ".\n\nEliminarlo comunque? I movimenti restano invariati, ma il portafoglio sparisce dai prospetti.\n\nSe vuoi solo toglierlo dai menu, usa Archivia.")) return;
       S.config.portafogli=S.config.portafogli.filter(function(x){ return x!==p; });
+      S.config.portafogliArchiviati=(S.config.portafogliArchiviati||[]).filter(function(x){ return x!==p; });
       delete S.config.saldiInizialiPortafogli[p];
       S.rettifiche=rettifiche().filter(function(r){ return r.portafoglio!==p; });
       save(); renderImpostazioni(); toast("Portafoglio rimosso");
