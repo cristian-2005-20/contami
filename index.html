@@ -883,6 +883,21 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
         <p class="hint">Ogni portafoglio parte dal valore che imposti in Impostazioni e si aggiorna da solo con i movimenti. Se dopo qualche mese il saldo non torna, premi <b>Correggi</b>: fissi la cifra reale e il conteggio riparte da lì, senza dover cercare l'errore.</p>
       </div>
 
+      <div class="card">
+        <h2>Portafogli</h2>
+        <p class="hint" style="margin:0 0 12px">Il saldo iniziale è quanto c'era nel portafoglio <b>prima</b> del primo movimento che hai registrato. Si imposta una volta sola: da lì in poi il saldo si aggiorna da solo.</p>
+        <div class="tw tw-schede">
+          <table class="mob-schede">
+            <thead><tr><th>Portafoglio</th><th class="num" style="width:170px">Saldo iniziale €</th><th class="num" style="width:140px">Saldo oggi</th><th style="width:190px"></th></tr></thead>
+            <tbody id="setPort"></tbody>
+            <tfoot id="setPortFoot"></tfoot>
+          </table>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;max-width:400px">
+          <input type="text" id="newPort" placeholder="Nuovo portafoglio" maxlength="40">
+          <button class="btn" data-add="portafogli">Aggiungi</button>
+        </div>
+      </div>
       </div>
       <div class="sezione" data-sez="fondi"><div class="card">
         <h2>Allocazione dei risparmi <span class="dim" style="text-transform:none;letter-spacing:0;font-family:var(--body)">— tutti gli anni, saldi iniziali inclusi</span></h2>
@@ -905,6 +920,21 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
         <p class="hint">I fondi sono una suddivisione teorica del tuo denaro liquido: la loro somma è sempre pari a quanto hai. Una spesa <b>sottrae</b> dal fondo indicato (o da <b>Non allocato</b> se non ne scegli uno), un'entrata <b>aggiunge</b>, e un giroconto sposta denaro tra due fondi senza toccare il totale.<br>Raggiunto l'obiettivo puoi segnare un fondo come <b>completato</b>: resta in elenco, evidenziato. Quando ne hai speso il capitale per la finalità prevista, segnalo come <b>concluso</b> e scende in fondo, in secondo piano. Entrambi i passaggi sono reversibili.</p>
       </div>
 
+      <div class="card">
+        <h2>Fondi di allocazione</h2>
+        <div class="tw tw-schede">
+          <table class="mob-schede">
+            <thead><tr><th>Fondo</th><th class="num" style="width:170px">Saldo iniziale €</th><th class="num" style="width:170px">Obiettivo €</th><th style="width:180px"></th></tr></thead>
+            <tbody id="setAlloc"></tbody>
+            <tfoot id="setAllocFoot"></tfoot>
+          </table>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;max-width:400px">
+          <input type="text" id="newAlloc" placeholder="Nuovo fondo (es. Vacanze)" maxlength="40">
+          <button class="btn" id="btnAddAlloc">Aggiungi fondo</button>
+        </div>
+        <p class="hint">Il saldo iniziale è quanto avevi già da parte in quel fondo prima di iniziare a registrare i movimenti. L'obiettivo è la cifra a cui vuoi arrivare; lascia zero se non hai un traguardo. Rinominando un fondo si aggiornano anche i movimenti e le regole che lo usano.</p>
+      </div>
       </div>
       <div class="sezione" data-sez="regole"><div class="card">
         <h2>Allocazione automatica dalle entrate</h2>
@@ -2679,215 +2709,6 @@ function renderPatrimonio(){
 }
 
 function renderPortafogli(){
-  var r=portafoglioBalances();
-  var body=$("portBody"); body.innerHTML="";
-  var elenco=S.config.portafogli.slice();
-  var tot=elenco.reduce(function(a,p){ return a+(r.saldi[p]||0); },0);
-  tot=Math.round(tot*100)/100;
-  var positivi=elenco.reduce(function(a,p){ return a+Math.max(0,r.saldi[p]||0); },0);
-
-  /* prima quelli con più denaro: in cima quello che conta */
-  elenco.sort(function(a,b){ return (r.saldi[b]||0)-(r.saldi[a]||0); });
-
-  if(!elenco.length){
-    var tr=el("tr"), td=el("td"); td.colSpan=5;
-    td.innerHTML='<div class="empty"><strong>Nessun portafoglio</strong>Aggiungine uno in Impostazioni.</div>';
-    tr.appendChild(td); body.appendChild(tr); return;
-  }
-
-  elenco.forEach(function(p){
-    var v=r.saldi[p]||0;
-    var quota=positivi>0 ? Math.max(0,v)/positivi*100 : 0;
-    var tr=el("tr");
-    if(v<0) tr.className="port-rosso";
-
-    var nm=cella("Portafoglio","testata");
-    var d=el("span","dot"); d.style.background=coloreFondo(p);
-    nm.appendChild(d); nm.appendChild(document.createTextNode(p));
-    tr.appendChild(nm);
-
-    tr.appendChild(cella("Saldo","num testata "+(v<0?"neg":v>0?"":"dim"),money(v)));
-
-    var qc=cella("Quota","num");
-    qc.innerHTML='<span class="mini-bar"><span style="width:'+Math.max(0,Math.min(100,quota))+'%;background:'+coloreFondo(p)+'"></span></span>'+
-      '<span class="dim">'+pct(quota)+'</span>';
-    tr.appendChild(qc);
-
-    tr.appendChild(cella("Movimenti","num dim", r.quanti[p]||"—"));
-    tr.appendChild(cella("Ultimo","num dim", r.ultimo[p]?dmy(r.ultimo[p]):"—"));
-    body.appendChild(tr);
-  });
-
-  var f=$("portFoot"); f.innerHTML="";
-  var ftr=el("tr");
-  ftr.appendChild(cella("","","Totale disponibile"));
-  ftr.appendChild(cella("Saldo","num "+(tot<0?"neg":""),money(tot)));
-  ftr.appendChild(cella("","",""));
-  ftr.appendChild(cella("","num", tx().filter(function(t){ return t.portafoglio; }).length));
-  ftr.appendChild(cella("","",""));
-  f.appendChild(ftr);
-
-  /* i portafogli e i fondi contano lo stesso denaro in due modi diversi:
-     se non coincidono, manca un saldo iniziale da qualche parte */
-  var bal=bucketBalances();
-  var totFondi=Math.round(S.config.allocazioni.reduce(function(a,k){ return a+(bal[k]||0); },0)*100)/100;
-  var scarto=Math.round((tot-totFondi)*100)/100;
-  var q=$("quadraturaPort");
-  if(Math.abs(scarto)<0.01){
-    q.className="quadratura ok";
-    q.innerHTML='<span class="ok">\u2713</span> I portafogli sommano a '+money(tot)+
-      ', quanto i fondi di allocazione: le due viste sullo stesso denaro coincidono.';
-  } else {
-    q.className="quadratura ko";
-    q.innerHTML='<span class="ko">!</span> I portafogli sommano a '+money(tot)+
-      ' ma i fondi a '+money(totFondi)+' ('+money(scarto)+' di scarto).<br>'+
-      '<span class="dim">Contano lo stesso denaro in due modi diversi: '+
-      'quasi sempre manca un valore iniziale in Impostazioni.</span>';
-  }
-}
-
-/* ── Scheda dei portafogli ── */
-/* ═══════════════════════════════════════════════
-   Menu laterale
-   Riepilogo e Impostazioni erano diventate lunghissime:
-   ogni argomento ha ora una sua pagina, raggiunta dal menu.
-   ═══════════════════════════════════════════════ */
-var SEZIONI = [
-  {gruppo:"I tuoi soldi"},
-  {id:"portafogli", nome:"Portafogli",            valore:function(){ return money(totalePortafogli()); }},
-  {id:"fondi",      nome:"Fondi di allocazione",  valore:function(){
-      var b=bucketBalances();
-      return money(S.config.allocazioni.reduce(function(a,k){ return a+(b[k]||0); },0)); }},
-  {gruppo:"Elenchi"},
-  {id:"argUscite",  nome:"Argomenti delle uscite",  valore:function(){ return S.config.argomentiUscite.length; }},
-  {id:"argEntrate", nome:"Argomenti delle entrate", valore:function(){ return S.config.argomentiEntrate.length; }},
-  {id:"necessita",  nome:"Livelli di necessità",    valore:function(){ return S.config.necessita.length; }},
-  {id:"stabilita",  nome:"Stabilità delle entrate", valore:function(){ return S.config.stabilita.length; }},
-  {gruppo:"Automazioni"},
-  {id:"regole",     nome:"Allocazione automatica",  valore:function(){
-      var n=(S.config.regole||[]).filter(function(r){ return r.attiva!==false; }).length;
-      return n ? n+" attiv"+(n===1?"a":"e") : "nessuna"; }},
-  {gruppo:"Applicazione"},
-  {id:"anni",       nome:"Anni nel menu",           valore:function(){ return (S.config.anni||[]).length || "—"; }},
-  {id:"pro",        nome:"Versione Pro"},
-  {id:"drive",      nome:"Backup su Google Drive"},
-  {id:"privacy",    nome:"Privacy e pubblicità"},
-  {id:"diagnostica",nome:"Verifica contenitore"},
-  {id:"dati",       nome:"Dati e backup"}
-];
-
-var sezioneAperta = null;
-
-function sezioneEsiste(id){
-  return !!document.querySelector('.sezione[data-sez="'+id+'"]');
-}
-
-function costruisciMenu(){
-  var box=$("menuVoci");
-  if(!box) return;
-  box.innerHTML="";
-  var gruppoDaScrivere=null;
-  SEZIONI.forEach(function(s){
-    if(s.gruppo){ gruppoDaScrivere=s.gruppo; return; }
-    if(!sezioneEsiste(s.id)) return;
-    /* alcune sezioni compaiono solo quando la funzione è attiva */
-
-    if(gruppoDaScrivere){
-      box.appendChild(el("div","menu-gruppo",gruppoDaScrivere));
-      gruppoDaScrivere=null;
-    }
-    var b=el("button","menu-voce"+(sezioneAperta===s.id?" on":""));
-    b.appendChild(el("span",null,s.nome));
-    if(s.valore){
-      var v; try{ v=s.valore(); }catch(e){ v=""; }
-      if(v!=="" && v!=null) b.appendChild(el("span","val",String(v)));
-    }
-    b.addEventListener("click",function(){ apriSezione(s.id); });
-    box.appendChild(b);
-  });
-}
-
-function apriMenu(){
-  costruisciMenu();
-  $("menuLat").classList.add("on");
-  $("menuLat").setAttribute("aria-hidden","false");
-  $("tenda").classList.add("on");
-}
-function chiudiMenu(){
-  $("menuLat").classList.remove("on");
-  $("menuLat").setAttribute("aria-hidden","true");
-  $("tenda").classList.remove("on");
-}
-
-function apriSezione(id){
-  var s=SEZIONI.filter(function(x){ return x.id===id; })[0];
-  if(!s) return;
-  sezioneAperta=id;
-  chiudiMenu();
-
-  /* la sezione vive nel deposito: la si sposta nella vista e poi la si rimette */
-  riponiSezione();
-  sezioneAperta=id;
-  var corpo=$("sezCorpo");
-  var blocco=document.querySelector('.sezione[data-sez="'+id+'"]');
-  if(blocco){
-    if(blocco.parentNode) blocco.parentNode.removeChild(blocco);
-    corpo.appendChild(blocco);
-  }
-  $("sezTitolo").textContent=s.nome;
-
-  view="sezione";
-  [].forEach.call(document.querySelectorAll(".nav button"),function(x){ x.classList.remove("on"); });
-  [].forEach.call(document.querySelectorAll(".view"),function(v){ v.classList.toggle("on", v.id==="view-sezione"); });
-  $("viewTitle").textContent=s.nome;
-  window.scrollTo(0,0);
-  renderAll();
-}
-
-function riponiSezione(){
-  var corpo=$("sezCorpo");
-  while(corpo.firstChild){
-    var b=corpo.firstChild;
-    corpo.removeChild(b);
-    $("deposito").appendChild(b);
-  }
-  sezioneAperta=null;
-}
-function chiudiSezione(){
-  riponiSezione();
-  apriMenu();
-}
-
-/* ── Riquadro compatto nel Riepilogo ── */
-function renderPatrimonio(){
-  var box=$("riepPatrimonio");
-  if(!box) return;
-  box.innerHTML="";
-  function scheda(k,v,cls,d,vaiA){
-    var b=el("div","stat");
-    b.appendChild(el("div","k",k));
-    b.appendChild(el("div","v "+(cls||""),v));
-    if(d) b.appendChild(el("div","d",d));
-    if(vaiA){
-      b.style.cursor="pointer";
-      b.addEventListener("click",function(){ apriSezione(vaiA); });
-    }
-    box.appendChild(b);
-  }
-  var totP=totalePortafogli();
-  var b=bucketBalances();
-  var totF=Math.round(S.config.allocazioni.reduce(function(a,k){ return a+(b[k]||0); },0)*100)/100;
-  var att=portafogliAttivi().length;
-  scheda("Liquidità totale",money(totP),totP<0?"neg":"", att+" portafogl"+(att===1?"io":"i"),"portafogli");
-  var conObiettivo=S.config.allocazioni.filter(function(k){ return (Number(S.config.obiettivi[k])||0)>0; }).length;
-  scheda("Suddivisa in",money(totF),"", conObiettivo?conObiettivo+" fondi con obiettivo":"fondi di allocazione","fondi");
-  var scarto=Math.round((totF-totP)*100)/100;
-  scheda("Coerenza", Math.abs(scarto)<0.01 ? "✓" : money(scarto),
-         Math.abs(scarto)<0.01 ? "pos" : "neg",
-         Math.abs(scarto)<0.01 ? "i due prospetti coincidono" : "i due prospetti non coincidono","fondi");
-}
-
-function renderPortafogli(){
   var body=$("portBody"), foot=$("portFoot");
   if(!body) return;
   body.innerHTML=""; foot.innerHTML="";
@@ -3605,7 +3426,6 @@ function renderImpostazioni(){
   renderAnni();
   renderRegole();
   fillSelect($("rFondo"), S.config.allocazioni, null, $("rFondo").value);
-  renderPortafogliImp();
   renderSetPortafogli();
   chips("chipsArgU","argomentiUscite");
   chips("chipsArgE","argomentiEntrate");
@@ -3750,57 +3570,6 @@ function renderAnni(){
     });
     c.appendChild(b); box.appendChild(c);
   });
-}
-
-function renderPortafogliImp(){
-  var r=portafoglioBalances();
-  var body=$("setPort"); body.innerHTML="";
-  var totIniz=0, totAtt=0;
-
-  S.config.portafogli.forEach(function(p){
-    var iniz=Number(S.config.saldiInizialiPortafogli[p])||0;
-    var att=r.saldi[p]||0;
-    totIniz+=iniz; totAtt+=att;
-
-    var tr=el("tr");
-    var nm=cella("Portafoglio","testata");
-    var d=el("span","dot"); d.style.background=coloreFondo(p);
-    nm.appendChild(d); nm.appendChild(document.createTextNode(p));
-    tr.appendChild(nm);
-
-    var c1=cella("Valore iniziale €","num");
-    var i1=document.createElement("input");
-    i1.type="number"; i1.step="0.01"; i1.style.textAlign="right";
-    i1.value=iniz;
-    i1.addEventListener("change",function(){
-      S.config.saldiInizialiPortafogli[p]=parseFloat(this.value)||0;
-      save(); renderImpostazioni();
-    });
-    c1.appendChild(i1); tr.appendChild(c1);
-
-    tr.appendChild(cella("Saldo attuale","num "+(att<0?"neg":att>0?"":"dim"),money(att)));
-
-    var az=cella("","azioni"), w=el("div","row-tools");
-    var del=el("button","btn sm danger","Elimina");
-    del.addEventListener("click",function(){
-      var usato=tx().some(function(t){ return t.portafoglio===p || t.portafoglioDest===p; });
-      if(usato && !confirm("\u00ab"+p+"\u00bb è usato da alcuni movimenti. Rimuoverlo comunque? Le voci restano invariate.")) return;
-      if(S.config.portafogli.length<=1){ toast("Deve restare almeno un portafoglio"); return; }
-      S.config.portafogli=S.config.portafogli.filter(function(x){ return x!==p; });
-      delete S.config.saldiInizialiPortafogli[p];
-      save(); renderImpostazioni();
-    });
-    w.appendChild(del); az.appendChild(w); tr.appendChild(az);
-    body.appendChild(tr);
-  });
-
-  var f=$("setPortFoot"); f.innerHTML="";
-  var ftr=el("tr");
-  ftr.appendChild(cella("","","Totale"));
-  ftr.appendChild(cella("Valore iniziale €","num",money(totIniz)));
-  ftr.appendChild(cella("Saldo attuale","num",money(Math.round(totAtt*100)/100)));
-  ftr.appendChild(cella("",""));
-  f.appendChild(ftr);
 }
 
 function renderSetPortafogli(){

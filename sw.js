@@ -3,7 +3,7 @@
    I dati delle finanze NON passano di qui: restano in localStorage,
    sul dispositivo, e non vengono mai inviati da nessuna parte. */
 
-const VERSIONE = "contami-v6";
+const VERSIONE = "contami-v7";
 const FILE = [
   "./",
   "./index.html",
