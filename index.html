@@ -486,8 +486,9 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
   flex:0 0 auto;width:38px;min-width:38px;padding:0;
   font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;
 }
-.titolo-riga{display:flex;align-items:center;gap:11px;margin-right:auto}
-.titolo-riga .title{margin:0}
+.anno-scelta{display:flex;gap:5px;align-items:center;flex:0 0 auto}
+.anno-scelta select{width:auto;min-width:86px}
+.anno-scelta .btn{padding:7px 11px;flex:0 0 auto}
 .sez-testa{display:flex;align-items:center;gap:12px;margin-bottom:16px}
 .sez-testa h2{font-family:var(--display);font-size:20px;font-weight:400;margin:0}
 .card.compatto .stat{padding:11px 14px}
@@ -561,9 +562,9 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
     position:sticky;top:0;z-index:25;padding:10px 12px;gap:8px;
     background:var(--ink);border-bottom:1px solid var(--line);
   }
-  .topbar .title{font-size:17px;margin:0}
-  .titolo-riga{width:100%;margin:0 0 2px}
-  .menu-apri{min-height:38px;padding:6px 11px}
+  .topbar .title{font-size:17px;margin:0 auto 0 0}
+  .anno-scelta select{min-width:74px;min-height:38px}
+  .anno-scelta .btn{min-height:38px;width:38px;min-width:38px;padding:0}
   .topbar .btn{flex:1;padding:9px 8px;font-size:13px}
   .topbar .menu-apri{flex:0 0 auto;width:40px;min-width:40px;padding:0;
     min-height:36px;font-size:17px}
@@ -729,20 +730,13 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
     <div class="warn" id="warn"></div>
 
     <div class="topbar">
-      <div class="titolo-riga">
-        <button class="btn menu-apri" id="btnMenu" aria-label="Apri il menu">☰</button>
-        <div class="title" id="viewTitle">Riepilogo</div>
+      <button class="btn menu-apri" id="btnMenu" aria-label="Apri il menu">☰</button>
+      <div class="title" id="viewTitle">Riepilogo</div>
+      <div class="anno-scelta">
+        <select id="yearSel" aria-label="Anno"></select>
+        <button class="btn" id="btnAnno" title="Aggiungi un anno all'elenco">+</button>
       </div>
-      <label class="f" style="width:150px">
-        <span>Anno</span>
-        <div style="display:flex;gap:5px">
-          <select id="yearSel"></select>
-          <button class="btn" id="btnAnno" title="Aggiungi un anno all'elenco" style="padding:7px 11px">+</button>
-        </div>
-      </label>
       <button class="btn primary" id="btnInstalla">Installa app</button>
-      <button class="btn" id="btnImport">Importa dati</button>
-      <button class="btn" id="btnExport">Esporta backup</button>
       <input type="file" id="fileIn" accept=".json,application/json" hidden>
     </div>
 
@@ -1000,7 +994,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
         <div class="chips" id="chipsAnni"></div>
       </div>
 
-      @@regole@@@@argUscite@@@@argEntrate@@@@portafogli@@@@necessita@@@@stabilita@@</div>
+      </div>
       <div class="sezione" data-sez="dati"><div class="card">
         <h2>Dati</h2>
         <div style="display:flex;gap:9px;flex-wrap:wrap">
@@ -2598,6 +2592,8 @@ var SEZIONI = [
 ];
 
 var sezioneAperta = null;
+/* da quale schermata si è arrivati al menu: ci si torna chiudendolo */
+var vistaPrecedente = "riepilogo";
 
 function sezioneEsiste(id){
   return !!document.querySelector('.sezione[data-sez="'+id+'"]');
@@ -2638,11 +2634,25 @@ function chiudiMenu(){
   $("menuLat").classList.remove("on");
   $("menuLat").setAttribute("aria-hidden","true");
   $("tenda").classList.remove("on");
+  /* Se dietro il menu c'era una sezione già richiusa, la vista è vuota:
+     si torna dov'eravamo invece di lasciare la schermata bianca. */
+  if(view==="sezione" && !sezioneAperta) tornaAllaVista();
+}
+
+function tornaAllaVista(){
+  riponiSezione();
+  view = vistaPrecedente || "riepilogo";
+  var b=document.querySelector('.nav button[data-view="'+view+'"]');
+  [].forEach.call(document.querySelectorAll(".nav button"),function(x){ x.classList.toggle("on",x===b); });
+  [].forEach.call(document.querySelectorAll(".view"),function(v){ v.classList.toggle("on", v.id==="view-"+view); });
+  if(b) $("viewTitle").textContent=(b.lastChild && b.lastChild.textContent || "").trim();
+  renderAll();
 }
 
 function apriSezione(id){
   var s=SEZIONI.filter(function(x){ return x.id===id; })[0];
   if(!s) return;
+  if(view!=="sezione") vistaPrecedente=view;
   sezioneAperta=id;
   chiudiMenu();
 
@@ -2675,7 +2685,9 @@ function riponiSezione(){
   sezioneAperta=null;
 }
 function chiudiSezione(){
-  riponiSezione();
+  /* si riappare sulla schermata di provenienza, con il menu aperto sopra:
+     così chiudendolo non si resta a mani vuote */
+  tornaAllaVista();
   apriMenu();
 }
 
@@ -3853,9 +3865,7 @@ function doExport(){
   setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },0);
   toast("Backup scaricato");
 }
-$("btnExport").addEventListener("click",doExport);
 $("btnExport2").addEventListener("click",doExport);
-$("btnImport").addEventListener("click",function(){ $("fileIn").click(); });
 $("btnInstalla").addEventListener("click",function(){
   if(promptInstalla){
     promptInstalla.prompt();
