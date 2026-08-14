@@ -440,6 +440,52 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 .passi{margin:0;padding-left:20px;font-size:13.5px;line-height:1.7}
 .passi li{margin-bottom:5px}
 .passi b{color:var(--brass)}
+/* ── Menu laterale ─────────────────────────── */
+.tenda{
+  position:fixed;inset:0;background:rgba(6,10,15,.6);
+  opacity:0;pointer-events:none;transition:opacity .2s;z-index:44;
+}
+.tenda.on{opacity:1;pointer-events:auto}
+.menu-lat{
+  position:fixed;top:0;left:0;bottom:0;width:280px;max-width:84vw;
+  background:var(--panel);border-right:1px solid var(--line);
+  transform:translateX(-100%);transition:transform .22s ease;
+  z-index:45;display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top,0);
+}
+.menu-lat.on{transform:none;box-shadow:6px 0 24px rgba(0,0,0,.4)}
+.menu-testa{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px;border-bottom:1px solid var(--line);
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--brass);
+}
+.menu-chiudi{
+  background:none;border:0;color:var(--muted);font-size:24px;
+  line-height:1;cursor:pointer;padding:0 4px;
+}
+.menu-chiudi:hover{color:var(--text)}
+.menu-voci{
+  flex:1;overflow-y:auto;padding:10px 0 24px;
+  padding-bottom:calc(24px + env(safe-area-inset-bottom,0));
+}
+.menu-gruppo{
+  font-family:var(--mono);font-size:9px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);
+  padding:16px 18px 6px;
+}
+.menu-voce{
+  display:flex;align-items:baseline;gap:10px;width:100%;
+  background:none;border:0;text-align:left;cursor:pointer;
+  padding:11px 18px;color:var(--text);font-size:14.5px;min-height:44px;
+}
+.menu-voce:hover{background:var(--panel-2)}
+.menu-voce.on{background:var(--panel-2);box-shadow:inset 3px 0 0 var(--brass);color:var(--brass)}
+.menu-voce .val{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.menu-apri{padding:7px 12px;font-size:16px;line-height:1;flex:0 0 auto}
+.sez-testa{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.sez-testa h2{font-family:var(--display);font-size:20px;font-weight:400;margin:0}
+.card.compatto .stat{padding:11px 14px}
 .toast{
   position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(12px);
   background:var(--panel-2);border:1px solid var(--brass-dim);
@@ -542,6 +588,26 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
     border-radius:var(--radius);padding:11px 12px;margin-bottom:9px;
     /* rete di sicurezza: una scheda non può collassare a zero */
     min-height:44px;
+    overflow:hidden;
+  }
+  /* Su telefono la riga è una scheda: l'evidenziazione va sul riquadro,
+     non su ogni cella, altrimenti si ripete e taglia gli angoli. */
+  table.mob-schede tr.fondo-completato{
+    background:linear-gradient(90deg, rgba(79,178,134,.14), rgba(79,178,134,.05));
+    border-color:#3a6b57;
+    box-shadow:inset 3px 0 0 var(--in);
+  }
+  table.mob-schede tr.fondo-completato td,
+  table.mob-schede tr.fondo-completato:hover td{
+    background:none;box-shadow:none;
+  }
+  table.mob-schede tr.fondo-concluso,
+  table.mob-schede tr.port-archiviato{
+    opacity:.5;border-color:var(--line);
+  }
+  table.mob-schede tr.fondo-concluso td,
+  table.mob-schede tr.port-archiviato td{
+    background:none;opacity:1;border-top:0;
   }
   /* se per qualsiasi motivo il layout a schede non si applicasse,
      la tabella resta comunque leggibile scorrendo in orizzontale */
@@ -624,6 +690,15 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 </head>
 <body>
 
+<div class="tenda" id="tenda"></div>
+<aside class="menu-lat" id="menuLat" aria-hidden="true">
+  <div class="menu-testa">
+    <span>Menu</span>
+    <button class="menu-chiudi" id="menuChiudi" aria-label="Chiudi">×</button>
+  </div>
+  <nav class="menu-voci" id="menuVoci"></nav>
+</aside>
+
 <div class="app">
   <aside class="rail">
     <div class="brand">
@@ -645,6 +720,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
     <div class="warn" id="warn"></div>
 
     <div class="topbar">
+      <button class="btn menu-apri" id="btnMenu" aria-label="Apri il menu">☰</button>
       <div class="title" id="viewTitle">Riepilogo</div>
       <label class="f" style="width:150px">
         <span>Anno</span>
@@ -743,56 +819,9 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
         </div>
       </div>
 
-      <div class="card">
-        <h2>I tuoi portafogli <span class="dim" style="text-transform:none;letter-spacing:0;font-family:var(--body)">— dove si trova il denaro, adesso</span></h2>
-        <div class="tw tw-schede">
-          <table class="mob-schede">
-            <thead><tr>
-              <th>Portafoglio</th><th class="num">Saldo</th><th class="num">Quota</th>
-              <th class="num">Movimenti</th><th class="num">Ultimo</th>
-            </tr></thead>
-            <tbody id="portBody"></tbody>
-            <tfoot id="portFoot"></tfoot>
-          </table>
-        </div>
-        <div class="quadratura" id="quadraturaPort"></div>
-        <p class="hint">Ogni portafoglio parte dal valore che imposti in Impostazioni e si aggiorna da solo con i movimenti. Se dopo qualche mese il saldo non torna, premi <b>Correggi</b>: fissi la cifra reale e il conteggio riparte da lì, senza dover cercare l'errore.</p>
-      </div>
-
-      <div class="card">
-        <h2>Dove sono i soldi <span class="dim" style="text-transform:none;letter-spacing:0;font-family:var(--body)">— saldo di ogni portafoglio, aggiornato a oggi</span></h2>
-        <div class="tw tw-schede">
-          <table class="mob-schede">
-            <thead><tr>
-              <th>Portafoglio</th><th class="num">Saldo</th><th class="num">Quota</th>
-              <th>Ultima verifica</th><th style="width:150px"></th>
-            </tr></thead>
-            <tbody id="portBody"></tbody>
-            <tfoot id="portFoot"></tfoot>
-          </table>
-        </div>
-        <p class="hint">Ogni portafoglio parte dal valore che imposti in Impostazioni e si aggiorna da solo con i movimenti. Se dopo qualche mese il saldo non torna, premi <b>Correggi</b>: fissi la cifra reale e il conteggio riparte da lì, senza dover cercare l'errore.</p>
-      </div>
-
-      <div class="card">
-        <h2>Allocazione dei risparmi <span class="dim" style="text-transform:none;letter-spacing:0;font-family:var(--body)">— tutti gli anni, saldi iniziali inclusi</span></h2>
-        <div class="ribbon">
-          <div class="ribbon-bar" id="ribbon"></div>
-          <div class="ribbon-scale" id="notches"></div>
-        </div>
-        <div class="tw tw-schede">
-          <table class="mob-schede">
-            <thead><tr>
-              <th>Fondo</th><th class="num">Saldo</th><th class="num">Quota</th>
-              <th class="num">Obiettivo</th><th class="num">Progresso</th><th class="num">Mancante</th>
-              <th style="width:230px"></th>
-            </tr></thead>
-            <tbody id="allocBody"></tbody>
-            <tfoot id="allocFoot"></tfoot>
-          </table>
-        </div>
-        <div class="quadratura" id="quadratura"></div>
-        <p class="hint">I fondi sono una suddivisione teorica del tuo denaro liquido: la loro somma è sempre pari a quanto hai. Una spesa <b>sottrae</b> dal fondo indicato (o da <b>Non allocato</b> se non ne scegli uno), un'entrata <b>aggiunge</b>, e un giroconto sposta denaro tra due fondi senza toccare il totale.<br>Raggiunto l'obiettivo puoi segnare un fondo come <b>completato</b>: resta in elenco, evidenziato. Quando ne hai speso il capitale per la finalità prevista, segnalo come <b>concluso</b> e scende in fondo, in secondo piano. Entrambi i passaggi sono reversibili.</p>
+      <div class="card compatto">
+        <h2>Patrimonio</h2>
+        <div class="grid3" id="riepPatrimonio"></div>
       </div>
 
       <div class="card">
@@ -817,31 +846,56 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
       <p class="hint">Ogni rilevazione è una fotografia del saldo a una certa data. Le variazioni sono sempre calcolate <b>al netto dei versamenti</b>: mostrano quanto ha reso il mercato, non quanto hai aggiunto tu. Gli anni diversi da quello scelto in alto si riducono a una riga di sintesi: cliccaci sopra per aprirli. L'asterisco segnala il primo anno di un conto, dove la percentuale è rapportata al capitale versato invece che al saldo iniziale, che non esiste ancora.</p>
     </section>
 
-    <!-- ══ IMPOSTAZIONI ═══════════════════════════ -->
-    <section class="view" id="view-impostazioni">
-      <div class="card">
-        <h2>Fondi di allocazione</h2>
+    <!-- ══ SEZIONE APERTA DAL MENU ════════════════ -->
+    <section class="view" id="view-sezione">
+      <div class="sez-testa">
+        <button class="btn ghost" id="btnMenuTorna">← Menu</button>
+        <h2 id="sezTitolo"></h2>
+      </div>
+      <div id="sezCorpo"></div>
+    </section>
+
+    <!-- ══ CONTENITORE DELLE SEZIONI (nascosto) ═══ -->
+        <div id="deposito" style="display:none">
+      <div class="sezione" data-sez="portafogli"><div class="card">
+        <h2>Dove sono i soldi <span class="dim" style="text-transform:none;letter-spacing:0;font-family:var(--body)">— saldo di ogni portafoglio, aggiornato a oggi</span></h2>
         <div class="tw tw-schede">
           <table class="mob-schede">
-            <thead><tr><th>Fondo</th><th class="num" style="width:170px">Saldo iniziale €</th><th class="num" style="width:170px">Obiettivo €</th><th style="width:180px"></th></tr></thead>
-            <tbody id="setAlloc"></tbody>
-            <tfoot id="setAllocFoot"></tfoot>
+            <thead><tr>
+              <th>Portafoglio</th><th class="num">Saldo</th><th class="num">Quota</th>
+              <th>Ultima verifica</th><th style="width:150px"></th>
+            </tr></thead>
+            <tbody id="portBody"></tbody>
+            <tfoot id="portFoot"></tfoot>
           </table>
         </div>
-        <div style="display:flex;gap:8px;margin-top:12px;max-width:400px">
-          <input type="text" id="newAlloc" placeholder="Nuovo fondo (es. Riscatto auto)" maxlength="40">
-          <button class="btn" id="btnAddAlloc">Aggiungi fondo</button>
+        <p class="hint">Ogni portafoglio parte dal valore che imposti in Impostazioni e si aggiorna da solo con i movimenti. Se dopo qualche mese il saldo non torna, premi <b>Correggi</b>: fissi la cifra reale e il conteggio riparte da lì, senza dover cercare l'errore.</p>
+      </div>
+
+      </div>
+      <div class="sezione" data-sez="fondi"><div class="card">
+        <h2>Allocazione dei risparmi <span class="dim" style="text-transform:none;letter-spacing:0;font-family:var(--body)">— tutti gli anni, saldi iniziali inclusi</span></h2>
+        <div class="ribbon">
+          <div class="ribbon-bar" id="ribbon"></div>
+          <div class="ribbon-scale" id="notches"></div>
         </div>
-        <p class="hint">Il saldo iniziale è quanto avevi già da parte in quel fondo prima di iniziare a registrare i movimenti qui. L'obiettivo è la cifra a cui vuoi arrivare; lascia zero se per quel fondo non hai un traguardo. Rinominando un fondo si aggiornano anche i movimenti e le regole che lo usano.</p>
+        <div class="tw tw-schede">
+          <table class="mob-schede">
+            <thead><tr>
+              <th>Fondo</th><th class="num">Saldo</th><th class="num">Quota</th>
+              <th class="num">Obiettivo</th><th class="num">Progresso</th><th class="num">Mancante</th>
+              <th style="width:230px"></th>
+            </tr></thead>
+            <tbody id="allocBody"></tbody>
+            <tfoot id="allocFoot"></tfoot>
+          </table>
+        </div>
+        <div class="quadratura" id="quadratura"></div>
+        <p class="hint">I fondi sono una suddivisione teorica del tuo denaro liquido: la loro somma è sempre pari a quanto hai. Una spesa <b>sottrae</b> dal fondo indicato (o da <b>Non allocato</b> se non ne scegli uno), un'entrata <b>aggiunge</b>, e un giroconto sposta denaro tra due fondi senza toccare il totale.<br>Raggiunto l'obiettivo puoi segnare un fondo come <b>completato</b>: resta in elenco, evidenziato. Quando ne hai speso il capitale per la finalità prevista, segnalo come <b>concluso</b> e scende in fondo, in secondo piano. Entrambi i passaggi sono reversibili.</p>
       </div>
 
-      <div class="card">
-        <h2>Anni nel menu</h2>
-        <p class="hint" style="margin:0 0 12px">Gli anni in cui hai movimenti o rilevazioni compaiono da soli. Qui sotto ci sono solo quelli che hai aggiunto a mano con il pulsante <b>+</b> in alto: puoi rimuoverli se li hai creati per errore.</p>
-        <div class="chips" id="chipsAnni"></div>
       </div>
-
-      <div class="card">
+      <div class="sezione" data-sez="regole"><div class="card">
         <h2>Allocazione automatica dalle entrate</h2>
         <p class="hint" style="margin:0 0 14px">Le regole si applicano in ordine alle entrate del mese: prima la riga in cima, poi le altre finché il denaro basta. Le percentuali si calcolano sul totale delle entrate del mese. Ogni valore può essere espresso in euro o in percentuale, e le due cifre restano memorizzate entrambe.</p>
         <div id="setRegole"></div>
@@ -855,7 +909,8 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
         </div>
       </div>
 
-      <div class="card">
+      </div>
+      <div class="sezione" data-sez="argUscite"><div class="card">
         <h2>Argomenti delle uscite</h2>
         <div class="chips" id="chipsArgU"></div>
         <div style="display:flex;gap:8px;margin-top:12px;max-width:400px">
@@ -864,7 +919,8 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
         </div>
       </div>
 
-      <div class="card">
+      </div>
+      <div class="sezione" data-sez="argEntrate"><div class="card">
         <h2>Argomenti delle entrate</h2>
         <p class="hint" style="margin:0 0 12px">Elenco separato da quello delle uscite: uno stesso nome può comparire in entrambi, se ha senso per te.</p>
         <div class="chips" id="chipsArgE"></div>
@@ -874,23 +930,8 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
         </div>
       </div>
 
-      <div class="card">
-        <h2>Portafogli</h2>
-        <p class="hint" style="margin:0 0 12px">Il saldo iniziale è quanto c'era nel portafoglio <b>prima</b> del primo movimento che hai registrato. Si imposta una volta sola: da lì in poi il saldo si aggiorna da solo.</p>
-        <div class="tw tw-schede">
-          <table class="mob-schede">
-            <thead><tr><th>Portafoglio</th><th class="num" style="width:180px">Valore iniziale €</th><th class="num" style="width:150px">Saldo attuale</th><th style="width:110px"></th></tr></thead>
-            <tbody id="setPort"></tbody>
-            <tfoot id="setPortFoot"></tfoot>
-          </table>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:12px;max-width:400px">
-          <input type="text" id="newPort" placeholder="Nuovo portafoglio">
-          <button class="btn" data-add="portafogli">Aggiungi</button>
-        </div>
       </div>
-
-      <div class="card">
+      <div class="sezione" data-sez="necessita"><div class="card">
         <h2>Livelli di necessità</h2>
         <p class="hint" style="margin:0 0 12px">Ordinati dal più necessario al più rinunciabile: la posizione determina il colore dell'etichetta. Il primo della lista è quello proposto per le nuove uscite.</p>
         <div class="chips" id="chipsNec"></div>
@@ -900,7 +941,8 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
         </div>
       </div>
 
-      <div class="card">
+      </div>
+      <div class="sezione" data-sez="stabilita"><div class="card">
         <h2>Stabilità delle entrate</h2>
         <p class="hint" style="margin:0 0 12px">Ordinati dalla più prevedibile alla meno. Il primo della lista è quello proposto per le nuove entrate.</p>
         <div class="chips" id="chipsStab"></div>
@@ -910,7 +952,15 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
         </div>
       </div>
 
-      <div class="card">
+      </div>
+      <div class="sezione" data-sez="anni"><div class="card">
+        <h2>Anni nel menu</h2>
+        <p class="hint" style="margin:0 0 12px">Gli anni in cui hai movimenti o rilevazioni compaiono da soli. Qui sotto ci sono solo quelli che hai aggiunto a mano con il pulsante <b>+</b> in alto: puoi rimuoverli se li hai creati per errore.</p>
+        <div class="chips" id="chipsAnni"></div>
+      </div>
+
+      @@regole@@@@argUscite@@@@argEntrate@@@@portafogli@@@@necessita@@@@stabilita@@</div>
+      <div class="sezione" data-sez="dati"><div class="card">
         <h2>Dati</h2>
         <div style="display:flex;gap:9px;flex-wrap:wrap">
           <button class="btn" id="btnExport2">Esporta backup JSON</button>
@@ -919,6 +969,16 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
           <button class="btn danger" id="btnWipe">Cancella tutto</button>
         </div>
         <p class="hint">L'importazione riconosce i duplicati: una voce già presente (stessa data, importo, dettaglio e portafoglio) non viene inserita due volte. Puoi quindi rilanciare lo script sullo stesso mese senza timori.</p>
+      </div>
+    </div>
+    </div>
+
+    <!-- ══ IMPOSTAZIONI ═══════════════════════════ -->
+    <section class="view" id="view-impostazioni">
+      <div class="card">
+        <h2>Impostazioni</h2>
+        <p class="hint" style="margin:0">Tutte le voci sono nel menu laterale.</p>
+        <button class="btn primary" id="btnApriMenuDaImp" style="margin-top:12px">Apri il menu</button>
       </div>
     </section>
   </main>
@@ -1349,6 +1409,8 @@ function aggiungiAnno(){
    ═══════════════════════════════════════════════ */
 $("nav").addEventListener("click",function(e){
   var b=e.target.closest("button[data-view]"); if(!b) return;
+  if(b.dataset.view==="impostazioni"){ apriMenu(); return; }
+  if(sezioneAperta) riponiSezione();
   view=b.dataset.view;
   [].forEach.call(document.querySelectorAll(".nav button"),function(x){ x.classList.toggle("on",x===b); });
   [].forEach.call(document.querySelectorAll(".view"),function(v){ v.classList.toggle("on", v.id==="view-"+view); });
@@ -1359,6 +1421,11 @@ $("nav").addEventListener("click",function(e){
 });
 
 $("yearSel").addEventListener("change",function(){ year=+this.value; renderAll(); });
+$("btnMenu").addEventListener("click",apriMenu);
+$("menuChiudi").addEventListener("click",chiudiMenu);
+$("tenda").addEventListener("click",chiudiMenu);
+$("btnMenuTorna").addEventListener("click",chiudiSezione);
+var bImp=$("btnApriMenuDaImp"); if(bImp) bImp.addEventListener("click",apriMenu);
 $("btnAnno").addEventListener("click",aggiungiAnno);
 
 /* ═══════════════════════════════════════════════
@@ -1409,6 +1476,13 @@ function renderYearSel(){
 
 function renderAll(){
   renderYearSel(); renderStamp();
+  if(view==="sezione"){
+    if(sezioneAperta==="portafogli"){ renderPortafogli(); renderSetPortafogli(); }
+    if(sezioneAperta==="fondi"){ renderRibbon(); renderImpostazioni(); }
+    if(["regole","argUscite","argEntrate","necessita","stabilita","anni","pro","drive"].indexOf(sezioneAperta)>=0) renderImpostazioni();
+    costruisciMenu();
+    return;
+  }
   if(view==="movimenti") renderMovimenti();
   if(view==="riepilogo") renderRiepilogo();
   if(view==="investimenti") renderInvestimenti();
@@ -2313,7 +2387,16 @@ function renderRiepilogo(){
 
   /* tabella mesi */
   var b=$("sumBody"); b.innerHTML="";
-  rows.forEach(function(r){
+  /* solo i mesi in cui è successo qualcosa: dodici righe di cui otto
+     vuote allungano la schermata senza dire niente */
+  var pieni=rows.filter(function(r){ return r.n>0; });
+  if(!pieni.length){
+    var trv=el("tr"), tdv=el("td"); tdv.colSpan=6;
+    tdv.innerHTML='<div class="empty"><strong>Nessun movimento nel '+year+'</strong>'+
+      'I mesi compariranno qui man mano che registri le voci.</div>';
+    trv.appendChild(tdv); b.appendChild(trv);
+  }
+  pieni.forEach(function(r){
     var tr=el("tr");
     var mn=cella("Mese","testata"); mn.innerHTML='<a href="#" data-m="'+r.m+'" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--line)">'+MESI[r.m]+'</a>';
     tr.appendChild(mn);
@@ -2351,8 +2434,7 @@ function renderRiepilogo(){
   f.appendChild(ftr);
 
   drawChart(rows);
-  renderPortafogli();
-  renderRibbon();
+  renderPatrimonio();
   renderCategorie();
 }
 
@@ -2404,6 +2486,146 @@ function fondiOrdinati(){
     (statoFondo(k)==="concluso" ? con : att).push(k);
   });
   return att.concat(con);
+}
+
+/* ═══════════════════════════════════════════════
+   Menu laterale
+   Riepilogo e Impostazioni erano diventate lunghissime:
+   ogni argomento ha ora una sua pagina, raggiunta dal menu.
+   ═══════════════════════════════════════════════ */
+var SEZIONI = [
+  {gruppo:"I tuoi soldi"},
+  {id:"portafogli", nome:"Portafogli",            valore:function(){ return money(totalePortafogli()); }},
+  {id:"fondi",      nome:"Fondi di allocazione",  valore:function(){
+      var b=bucketBalances();
+      return money(S.config.allocazioni.reduce(function(a,k){ return a+(b[k]||0); },0)); }},
+  {gruppo:"Elenchi"},
+  {id:"argUscite",  nome:"Argomenti delle uscite",  valore:function(){ return S.config.argomentiUscite.length; }},
+  {id:"argEntrate", nome:"Argomenti delle entrate", valore:function(){ return S.config.argomentiEntrate.length; }},
+  {id:"necessita",  nome:"Livelli di necessità",    valore:function(){ return S.config.necessita.length; }},
+  {id:"stabilita",  nome:"Stabilità delle entrate", valore:function(){ return S.config.stabilita.length; }},
+  {gruppo:"Automazioni"},
+  {id:"regole",     nome:"Allocazione automatica",  valore:function(){
+      var n=(S.config.regole||[]).filter(function(r){ return r.attiva!==false; }).length;
+      return n ? n+" attiv"+(n===1?"a":"e") : "nessuna"; }},
+  {gruppo:"Applicazione"},
+  {id:"anni",       nome:"Anni nel menu",           valore:function(){ return (S.config.anni||[]).length || "—"; }},
+  {id:"pro",        nome:"Versione Pro"},
+  {id:"drive",      nome:"Backup su Google Drive"},
+  {id:"privacy",    nome:"Privacy e pubblicità"},
+  {id:"diagnostica",nome:"Verifica contenitore"},
+  {id:"dati",       nome:"Dati e backup"}
+];
+
+var sezioneAperta = null;
+
+function sezioneEsiste(id){
+  return !!document.querySelector('.sezione[data-sez="'+id+'"]');
+}
+
+function costruisciMenu(){
+  var box=$("menuVoci");
+  if(!box) return;
+  box.innerHTML="";
+  var gruppoDaScrivere=null;
+  SEZIONI.forEach(function(s){
+    if(s.gruppo){ gruppoDaScrivere=s.gruppo; return; }
+    if(!sezioneEsiste(s.id)) return;
+    /* alcune sezioni compaiono solo quando la funzione è attiva */
+
+    if(gruppoDaScrivere){
+      box.appendChild(el("div","menu-gruppo",gruppoDaScrivere));
+      gruppoDaScrivere=null;
+    }
+    var b=el("button","menu-voce"+(sezioneAperta===s.id?" on":""));
+    b.appendChild(el("span",null,s.nome));
+    if(s.valore){
+      var v; try{ v=s.valore(); }catch(e){ v=""; }
+      if(v!=="" && v!=null) b.appendChild(el("span","val",String(v)));
+    }
+    b.addEventListener("click",function(){ apriSezione(s.id); });
+    box.appendChild(b);
+  });
+}
+
+function apriMenu(){
+  costruisciMenu();
+  $("menuLat").classList.add("on");
+  $("menuLat").setAttribute("aria-hidden","false");
+  $("tenda").classList.add("on");
+}
+function chiudiMenu(){
+  $("menuLat").classList.remove("on");
+  $("menuLat").setAttribute("aria-hidden","true");
+  $("tenda").classList.remove("on");
+}
+
+function apriSezione(id){
+  var s=SEZIONI.filter(function(x){ return x.id===id; })[0];
+  if(!s) return;
+  sezioneAperta=id;
+  chiudiMenu();
+
+  /* la sezione vive nel deposito: la si sposta nella vista e poi la si rimette */
+  riponiSezione();
+  sezioneAperta=id;
+  var corpo=$("sezCorpo");
+  var blocco=document.querySelector('.sezione[data-sez="'+id+'"]');
+  if(blocco){
+    if(blocco.parentNode) blocco.parentNode.removeChild(blocco);
+    corpo.appendChild(blocco);
+  }
+  $("sezTitolo").textContent=s.nome;
+
+  view="sezione";
+  [].forEach.call(document.querySelectorAll(".nav button"),function(x){ x.classList.remove("on"); });
+  [].forEach.call(document.querySelectorAll(".view"),function(v){ v.classList.toggle("on", v.id==="view-sezione"); });
+  $("viewTitle").textContent=s.nome;
+  window.scrollTo(0,0);
+  renderAll();
+}
+
+function riponiSezione(){
+  var corpo=$("sezCorpo");
+  while(corpo.firstChild){
+    var b=corpo.firstChild;
+    corpo.removeChild(b);
+    $("deposito").appendChild(b);
+  }
+  sezioneAperta=null;
+}
+function chiudiSezione(){
+  riponiSezione();
+  apriMenu();
+}
+
+/* ── Riquadro compatto nel Riepilogo ── */
+function renderPatrimonio(){
+  var box=$("riepPatrimonio");
+  if(!box) return;
+  box.innerHTML="";
+  function scheda(k,v,cls,d,vaiA){
+    var b=el("div","stat");
+    b.appendChild(el("div","k",k));
+    b.appendChild(el("div","v "+(cls||""),v));
+    if(d) b.appendChild(el("div","d",d));
+    if(vaiA){
+      b.style.cursor="pointer";
+      b.addEventListener("click",function(){ apriSezione(vaiA); });
+    }
+    box.appendChild(b);
+  }
+  var totP=totalePortafogli();
+  var b=bucketBalances();
+  var totF=Math.round(S.config.allocazioni.reduce(function(a,k){ return a+(b[k]||0); },0)*100)/100;
+  var att=portafogliAttivi().length;
+  scheda("Liquidità totale",money(totP),totP<0?"neg":"", att+" portafogl"+(att===1?"io":"i"),"portafogli");
+  var conObiettivo=S.config.allocazioni.filter(function(k){ return (Number(S.config.obiettivi[k])||0)>0; }).length;
+  scheda("Suddivisa in",money(totF),"", conObiettivo?conObiettivo+" fondi con obiettivo":"fondi di allocazione","fondi");
+  var scarto=Math.round((totF-totP)*100)/100;
+  scheda("Coerenza", Math.abs(scarto)<0.01 ? "✓" : money(scarto),
+         Math.abs(scarto)<0.01 ? "pos" : "neg",
+         Math.abs(scarto)<0.01 ? "i due prospetti coincidono" : "i due prospetti non coincidono","fondi");
 }
 
 function renderPortafogli(){
@@ -2475,6 +2697,146 @@ function renderPortafogli(){
 }
 
 /* ── Scheda dei portafogli ── */
+/* ═══════════════════════════════════════════════
+   Menu laterale
+   Riepilogo e Impostazioni erano diventate lunghissime:
+   ogni argomento ha ora una sua pagina, raggiunta dal menu.
+   ═══════════════════════════════════════════════ */
+var SEZIONI = [
+  {gruppo:"I tuoi soldi"},
+  {id:"portafogli", nome:"Portafogli",            valore:function(){ return money(totalePortafogli()); }},
+  {id:"fondi",      nome:"Fondi di allocazione",  valore:function(){
+      var b=bucketBalances();
+      return money(S.config.allocazioni.reduce(function(a,k){ return a+(b[k]||0); },0)); }},
+  {gruppo:"Elenchi"},
+  {id:"argUscite",  nome:"Argomenti delle uscite",  valore:function(){ return S.config.argomentiUscite.length; }},
+  {id:"argEntrate", nome:"Argomenti delle entrate", valore:function(){ return S.config.argomentiEntrate.length; }},
+  {id:"necessita",  nome:"Livelli di necessità",    valore:function(){ return S.config.necessita.length; }},
+  {id:"stabilita",  nome:"Stabilità delle entrate", valore:function(){ return S.config.stabilita.length; }},
+  {gruppo:"Automazioni"},
+  {id:"regole",     nome:"Allocazione automatica",  valore:function(){
+      var n=(S.config.regole||[]).filter(function(r){ return r.attiva!==false; }).length;
+      return n ? n+" attiv"+(n===1?"a":"e") : "nessuna"; }},
+  {gruppo:"Applicazione"},
+  {id:"anni",       nome:"Anni nel menu",           valore:function(){ return (S.config.anni||[]).length || "—"; }},
+  {id:"pro",        nome:"Versione Pro"},
+  {id:"drive",      nome:"Backup su Google Drive"},
+  {id:"privacy",    nome:"Privacy e pubblicità"},
+  {id:"diagnostica",nome:"Verifica contenitore"},
+  {id:"dati",       nome:"Dati e backup"}
+];
+
+var sezioneAperta = null;
+
+function sezioneEsiste(id){
+  return !!document.querySelector('.sezione[data-sez="'+id+'"]');
+}
+
+function costruisciMenu(){
+  var box=$("menuVoci");
+  if(!box) return;
+  box.innerHTML="";
+  var gruppoDaScrivere=null;
+  SEZIONI.forEach(function(s){
+    if(s.gruppo){ gruppoDaScrivere=s.gruppo; return; }
+    if(!sezioneEsiste(s.id)) return;
+    /* alcune sezioni compaiono solo quando la funzione è attiva */
+
+    if(gruppoDaScrivere){
+      box.appendChild(el("div","menu-gruppo",gruppoDaScrivere));
+      gruppoDaScrivere=null;
+    }
+    var b=el("button","menu-voce"+(sezioneAperta===s.id?" on":""));
+    b.appendChild(el("span",null,s.nome));
+    if(s.valore){
+      var v; try{ v=s.valore(); }catch(e){ v=""; }
+      if(v!=="" && v!=null) b.appendChild(el("span","val",String(v)));
+    }
+    b.addEventListener("click",function(){ apriSezione(s.id); });
+    box.appendChild(b);
+  });
+}
+
+function apriMenu(){
+  costruisciMenu();
+  $("menuLat").classList.add("on");
+  $("menuLat").setAttribute("aria-hidden","false");
+  $("tenda").classList.add("on");
+}
+function chiudiMenu(){
+  $("menuLat").classList.remove("on");
+  $("menuLat").setAttribute("aria-hidden","true");
+  $("tenda").classList.remove("on");
+}
+
+function apriSezione(id){
+  var s=SEZIONI.filter(function(x){ return x.id===id; })[0];
+  if(!s) return;
+  sezioneAperta=id;
+  chiudiMenu();
+
+  /* la sezione vive nel deposito: la si sposta nella vista e poi la si rimette */
+  riponiSezione();
+  sezioneAperta=id;
+  var corpo=$("sezCorpo");
+  var blocco=document.querySelector('.sezione[data-sez="'+id+'"]');
+  if(blocco){
+    if(blocco.parentNode) blocco.parentNode.removeChild(blocco);
+    corpo.appendChild(blocco);
+  }
+  $("sezTitolo").textContent=s.nome;
+
+  view="sezione";
+  [].forEach.call(document.querySelectorAll(".nav button"),function(x){ x.classList.remove("on"); });
+  [].forEach.call(document.querySelectorAll(".view"),function(v){ v.classList.toggle("on", v.id==="view-sezione"); });
+  $("viewTitle").textContent=s.nome;
+  window.scrollTo(0,0);
+  renderAll();
+}
+
+function riponiSezione(){
+  var corpo=$("sezCorpo");
+  while(corpo.firstChild){
+    var b=corpo.firstChild;
+    corpo.removeChild(b);
+    $("deposito").appendChild(b);
+  }
+  sezioneAperta=null;
+}
+function chiudiSezione(){
+  riponiSezione();
+  apriMenu();
+}
+
+/* ── Riquadro compatto nel Riepilogo ── */
+function renderPatrimonio(){
+  var box=$("riepPatrimonio");
+  if(!box) return;
+  box.innerHTML="";
+  function scheda(k,v,cls,d,vaiA){
+    var b=el("div","stat");
+    b.appendChild(el("div","k",k));
+    b.appendChild(el("div","v "+(cls||""),v));
+    if(d) b.appendChild(el("div","d",d));
+    if(vaiA){
+      b.style.cursor="pointer";
+      b.addEventListener("click",function(){ apriSezione(vaiA); });
+    }
+    box.appendChild(b);
+  }
+  var totP=totalePortafogli();
+  var b=bucketBalances();
+  var totF=Math.round(S.config.allocazioni.reduce(function(a,k){ return a+(b[k]||0); },0)*100)/100;
+  var att=portafogliAttivi().length;
+  scheda("Liquidità totale",money(totP),totP<0?"neg":"", att+" portafogl"+(att===1?"io":"i"),"portafogli");
+  var conObiettivo=S.config.allocazioni.filter(function(k){ return (Number(S.config.obiettivi[k])||0)>0; }).length;
+  scheda("Suddivisa in",money(totF),"", conObiettivo?conObiettivo+" fondi con obiettivo":"fondi di allocazione","fondi");
+  var scarto=Math.round((totF-totP)*100)/100;
+  scheda("Coerenza", Math.abs(scarto)<0.01 ? "✓" : money(scarto),
+         Math.abs(scarto)<0.01 ? "pos" : "neg",
+         Math.abs(scarto)<0.01 ? "i due prospetti coincidono" : "i due prospetti non coincidono","fondi");
+}
+
 function renderPortafogli(){
   var body=$("portBody"), foot=$("portFoot");
   if(!body) return;
@@ -3987,7 +4349,7 @@ $("btnDemo").addEventListener("click",function(){
 
 /* ── Tasti ── */
 document.addEventListener("keydown",function(e){
-  if(e.key==="Escape"){ closeTx(); closeSnap(); chiudiAlloc(); chiudiRettifica(); }
+  if(e.key==="Escape"){ closeTx(); closeSnap(); chiudiAlloc(); chiudiRettifica(); chiudiMenu(); }
   if(e.key==="Enter" && $("txMask").classList.contains("on") && e.target.tagName!=="TEXTAREA"){ $("txSave").click(); }
   if(e.key==="Enter" && $("invMask").classList.contains("on")){ $("invSave").click(); }
 });
