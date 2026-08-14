@@ -482,7 +482,10 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 .menu-voce:hover{background:var(--panel-2)}
 .menu-voce.on{background:var(--panel-2);box-shadow:inset 3px 0 0 var(--brass);color:var(--brass)}
 .menu-voce .val{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted)}
-.menu-apri{padding:7px 12px;font-size:16px;line-height:1;flex:0 0 auto}
+.menu-apri{
+  flex:0 0 auto;width:38px;min-width:38px;padding:0;
+  font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;
+}
 .titolo-riga{display:flex;align-items:center;gap:11px;margin-right:auto}
 .titolo-riga .title{margin:0}
 .sez-testa{display:flex;align-items:center;gap:12px;margin-bottom:16px}
@@ -562,6 +565,8 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
   .titolo-riga{width:100%;margin:0 0 2px}
   .menu-apri{min-height:38px;padding:6px 11px}
   .topbar .btn{flex:1;padding:9px 8px;font-size:13px}
+  .topbar .menu-apri{flex:0 0 auto;width:40px;min-width:40px;padding:0;
+    min-height:36px;font-size:17px}
   .topbar label.f{width:118px!important}
   .view{padding:14px 12px 30px}
   .card{padding:14px 12px}
@@ -1179,7 +1184,7 @@ function defaults(){
   };
 }
 
-var S = load();
+var S = normalizzaStato(load());
 var view = "riepilogo";
 var year = new Date().getFullYear();
 var month = new Date().getMonth();
@@ -1203,6 +1208,40 @@ function pulisciAllocazioni(d){
     delete d.config.saldiIniziali[a];
     delete d.config.obiettivi[a];
   });
+}
+
+/* Garantisce che ogni campo previsto esista.
+   Un solo elenco mancante — dopo un'importazione parziale o un backup
+   di una versione diversa — bloccherebbe l'intera schermata. */
+function normalizzaStato(d){
+  var base=defaults();
+  if(!d || typeof d!=="object") d=base;
+  if(!Array.isArray(d.transactions)) d.transactions=[];
+  if(!Array.isArray(d.rettifiche))   d.rettifiche=[];
+  if(!Array.isArray(d.conti) || !d.conti.length) d.conti=base.conti;
+  d.conti.forEach(function(c){ if(!Array.isArray(c.snapshots)) c.snapshots=[]; });
+  if(!d.config || typeof d.config!=="object") d.config={};
+  Object.keys(base.config).forEach(function(k){
+    var atteso=base.config[k];
+    if(Array.isArray(atteso)){
+      if(!Array.isArray(d.config[k])) d.config[k]=atteso.slice();
+    } else if(atteso && typeof atteso==="object"){
+      if(!d.config[k] || typeof d.config[k]!=="object") d.config[k]={};
+    } else if(d.config[k]==null){
+      d.config[k]=atteso;
+    }
+  });
+  /* gli elenchi che non possono restare vuoti */
+  ["portafogli","allocazioni","necessita","stabilita","argomentiUscite","argomentiEntrate"]
+    .forEach(function(k){ if(!d.config[k].length) d.config[k]=base.config[k].slice(); });
+  d.config.allocazioni.forEach(function(a){
+    if(d.config.saldiIniziali[a]==null) d.config.saldiIniziali[a]=0;
+    if(d.config.obiettivi[a]==null)     d.config.obiettivi[a]=0;
+  });
+  d.config.portafogli.forEach(function(p){
+    if(d.config.saldiInizialiPortafogli[p]==null) d.config.saldiInizialiPortafogli[p]=0;
+  });
+  return d;
 }
 
 function load(){
@@ -1337,9 +1376,14 @@ function load(){
     if(!Array.isArray(d.config.portafogliArchiviati)) d.config.portafogliArchiviati = [];
     d.config.schema = 8;
     pulisciAllocazioni(d);
+    normalizzaStato(d);
     if(!Array.isArray(d.conti) || !d.conti.length) d.conti = base.conti;
     return d;
-  }catch(e){ return defaults(); }
+  }catch(e){
+    /* un dato corrotto non deve impedire l'apertura dell'app */
+    try{ console.error("Dati non leggibili, riparto da capo:", e); }catch(x){}
+    return defaults();
+  }
 }
 function save(){
   try{ store.setItem(KEY, JSON.stringify(S)); }
@@ -4221,6 +4265,7 @@ function importPayload(d){
   if(isBackup && tx().length && confirm("Il file è un backup completo.\n\nOK = sostituisci tutti i dati attuali\nAnnulla = unisci solo i movimenti nuovi")){
     S = Object.assign(defaults(), d);
     S.config = Object.assign(defaults().config, d.config||{});
+    normalizzaStato(S);
     save(); renderAll(); toast("Dati sostituiti dal backup");
     return;
   }
@@ -4305,6 +4350,7 @@ function importPayload(d){
     });
   }
 
+  normalizzaStato(S);
   save(); renderAll();
   toast(added+" voci aggiunte · "+skipped+" duplicati ignorati"+
     (snapAdded?(" · "+snapAdded+" rilevazioni"):"")+
@@ -4489,12 +4535,37 @@ renderAll=function(){ _renderAll(); setTimeout(misuraTopbar,0); };
   window.addEventListener("resize", controlla);
 })();
 
+/* Primo disegno della schermata: se qualcosa va storto lo si vede,
+   e si riprova con lo stato ripulito invece di restare a mani vuote. */
+function avviaInterfaccia(){
+  try{
+    renderAll();
+  }catch(e){
+    try{ console.error("Primo disegno non riuscito:", e); }catch(x){}
+    try{
+      normalizzaStato(S);
+      renderAll();
+      toast("Alcuni dati erano incompleti: sistemati");
+    }catch(e2){
+      try{ console.error("Secondo tentativo fallito:", e2); }catch(x){}
+      var t=document.getElementById("viewTitle");
+      if(t) t.textContent="Errore all'avvio";
+      var w=document.getElementById("warn");
+      if(w){
+        w.className="warn on";
+        w.textContent="L'app non è riuscita ad aprirsi: "+(e2 && e2.message ? e2.message : "errore sconosciuto")+
+          ". Prova a chiudere e riaprire; se il problema resta, reinstalla e importa il backup.";
+      }
+    }
+  }
+}
+
 /* ── Avvio ── */
 if(MEM_ONLY){
   var w=$("warn"); w.classList.add("on");
   w.textContent="Il salvataggio automatico non è disponibile in questa finestra. Scarica il file finanze.html e aprilo dal tuo PC, oppure usa «Esporta backup» prima di chiudere.";
 }
-renderAll();
+avviaInterfaccia();
 </script>
 </body>
 </html>
