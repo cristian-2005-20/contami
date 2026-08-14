@@ -483,6 +483,8 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 .menu-voce.on{background:var(--panel-2);box-shadow:inset 3px 0 0 var(--brass);color:var(--brass)}
 .menu-voce .val{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted)}
 .menu-apri{padding:7px 12px;font-size:16px;line-height:1;flex:0 0 auto}
+.titolo-riga{display:flex;align-items:center;gap:11px;margin-right:auto}
+.titolo-riga .title{margin:0}
 .sez-testa{display:flex;align-items:center;gap:12px;margin-bottom:16px}
 .sez-testa h2{font-family:var(--display);font-size:20px;font-weight:400;margin:0}
 .card.compatto .stat{padding:11px 14px}
@@ -556,7 +558,9 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
     position:sticky;top:0;z-index:25;padding:10px 12px;gap:8px;
     background:var(--ink);border-bottom:1px solid var(--line);
   }
-  .topbar .title{font-size:17px;width:100%;margin:0 0 2px}
+  .topbar .title{font-size:17px;margin:0}
+  .titolo-riga{width:100%;margin:0 0 2px}
+  .menu-apri{min-height:38px;padding:6px 11px}
   .topbar .btn{flex:1;padding:9px 8px;font-size:13px}
   .topbar label.f{width:118px!important}
   .view{padding:14px 12px 30px}
@@ -720,8 +724,10 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
     <div class="warn" id="warn"></div>
 
     <div class="topbar">
-      <button class="btn menu-apri" id="btnMenu" aria-label="Apri il menu">☰</button>
-      <div class="title" id="viewTitle">Riepilogo</div>
+      <div class="titolo-riga">
+        <button class="btn menu-apri" id="btnMenu" aria-label="Apri il menu">☰</button>
+        <div class="title" id="viewTitle">Riepilogo</div>
+      </div>
       <label class="f" style="width:150px">
         <span>Anno</span>
         <div style="display:flex;gap:5px">
@@ -4179,9 +4185,16 @@ $("instrPulisci").addEventListener("click",function(){
 });
 $("instrMask").addEventListener("click",function(e){ if(e.target===this) this.classList.remove("on"); });
 
-/* dentro l'app installata il pulsante non serve */
-if(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches){
-  $("btnInstalla").style.display="none";
+/* dentro l'app già installata il pulsante non serve */
+if(appGiaInstallata()) $("btnInstalla").style.display="none";
+/* e se l'installazione avviene mentre l'app è aperta, sparisce subito */
+if(window.matchMedia){
+  try{
+    var mqInst=window.matchMedia("(display-mode: standalone)");
+    var reagisciInst=function(){ if(appGiaInstallata()) $("btnInstalla").style.display="none"; };
+    if(mqInst.addEventListener) mqInst.addEventListener("change",reagisciInst);
+    else if(mqInst.addListener) mqInst.addListener(reagisciInst);
+  }catch(e){}
 }
 $("btnImport2").addEventListener("click",function(){ $("fileIn").click(); });
 
@@ -4397,8 +4410,28 @@ if(navigator.storage && navigator.storage.persist){
 
 /* Pulsante di installazione, quando il browser lo consente */
 var promptInstalla=null;
+
+/* Chrome talvolta continua a proporre l'installazione anche da dentro
+   l'app, per esempio quando l'indirizzo di partenza è cambiato.
+   Qui controlliamo in tutti i modi possibili se siamo già dentro. */
+function appGiaInstallata(){
+  if(typeof NATIVO!=="undefined" && NATIVO) return true;
+  try{
+    if(window.matchMedia){
+      var modi=["standalone","fullscreen","minimal-ui","window-controls-overlay"];
+      for(var i=0;i<modi.length;i++){
+        if(window.matchMedia("(display-mode: "+modi[i]+")").matches) return true;
+      }
+    }
+  }catch(e){}
+  if(navigator.standalone === true) return true;                 /* iPhone */
+  if(String(document.referrer||"").indexOf("android-app://")===0) return true;
+  return false;
+}
+
 window.addEventListener("beforeinstallprompt",function(e){
   e.preventDefault(); promptInstalla=e;
+  if(appGiaInstallata()) return;
   var b=$("btnInstalla"); if(b) b.style.display="";
 });
 window.addEventListener("appinstalled",function(){
