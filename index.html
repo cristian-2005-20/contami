@@ -492,6 +492,10 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
   flex:0 0 auto;width:38px;min-width:38px;padding:0;
   font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;
 }
+.riga-importo{display:flex;gap:6px}
+.riga-importo input{flex:1;min-width:0}
+.riga-importo select{width:auto;min-width:84px;flex:0 0 auto}
+.cambio-nota{font-size:12px;color:var(--muted);margin-top:5px}
 .anno-scelta{display:flex;gap:5px;align-items:center;flex:0 0 auto}
 .anno-scelta select{width:auto;min-width:86px}
 .anno-scelta .btn{padding:7px 11px;flex:0 0 auto}
@@ -741,7 +745,6 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
       <div class="title" id="viewTitle">Riepilogo</div>
       <div class="anno-scelta">
         <select id="yearSel" aria-label="Anno"></select>
-        <button class="btn" id="btnAnno" title="Aggiungi un anno all'elenco">+</button>
       </div>
       <button class="btn primary" id="btnInstalla">Installa app</button>
       <input type="file" id="fileIn" accept=".json,application/json" hidden>
@@ -889,7 +892,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
         <p class="hint" style="margin:0 0 12px">Il saldo iniziale è quanto c'era nel portafoglio <b>prima</b> del primo movimento che hai registrato. Si imposta una volta sola: da lì in poi il saldo si aggiorna da solo.</p>
         <div class="tw tw-schede">
           <table class="mob-schede">
-            <thead><tr><th>Portafoglio</th><th class="num" style="width:170px">Saldo iniziale €</th><th class="num" style="width:140px">Saldo oggi</th><th style="width:190px"></th></tr></thead>
+            <thead><tr><th>Portafoglio</th><th class="num" style="width:150px">Saldo iniziale</th><th class="num" style="width:120px">Valuta</th><th class="num" style="width:130px">Saldo oggi</th><th style="width:190px"></th></tr></thead>
             <tbody id="setPort"></tbody>
             <tfoot id="setPortFoot"></tfoot>
           </table>
@@ -995,10 +998,54 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
       </div>
 
       </div>
+      <div class="sezione" data-sez="valute"><div class="card">
+        <h2>Valute</h2>
+        <div class="form-grid">
+          <label class="f"><span>Valuta principale</span><select id="valBase"></select></label>
+        </div>
+        <p class="hint" style="margin:10px 0 0">Tutti i conteggi sono espressi in questa valuta. Un movimento inserito in valuta diversa viene convertito al momento del salvataggio, e il cambio usato resta fissato: i totali dei mesi passati non cambiano più.</p>
+      </div>
+      <div class="card">
+        <h2>Tassi di cambio</h2>
+        <div id="statoTassi"></div>
+        <div class="tw tw-schede">
+          <table class="mob-schede">
+            <thead><tr><th>Valuta</th><th class="num" style="width:180px">1 unità vale</th><th style="width:110px"></th></tr></thead>
+            <tbody id="tassiBody"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn primary" id="btnScaricaTassi">Scarica i tassi aggiornati</button>
+          <select id="nuovaValuta" style="max-width:220px"></select>
+          <button class="btn" id="btnAggiungiValuta">Aggiungi</button>
+        </div>
+        <p class="hint">I tassi arrivano dalla Banca Centrale Europea tramite un servizio pubblico e gratuito. Lo scaricamento non invia nessun tuo dato: chiede solo l'elenco dei cambi del giorno. Puoi anche correggerli a mano, e senza rete restano validi gli ultimi scaricati.</p>
+      </div></div>
+
+      <div class="sezione" data-sez="preferenze"><div class="card">
+        <h2>Preferenze</h2>
+        <div class="form-grid">
+          <label class="f"><span>Ordine dei movimenti</span>
+            <select id="prefOrdine">
+              <option value="desc">Dal più recente al più vecchio</option>
+              <option value="asc">Dal più vecchio al più recente</option>
+            </select>
+          </label>
+          <label class="f"><span>Lingua</span>
+            <select id="prefLingua">
+              <option value="it">Italiano</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint">La lingua cambia le voci dell'applicazione. Gli argomenti, i portafogli e i dettagli che hai scritto tu restano come li hai inseriti.</p>
+      </div></div>
+
       <div class="sezione" data-sez="anni"><div class="card">
         <h2>Anni nel menu</h2>
         <p class="hint" style="margin:0 0 12px">Gli anni in cui hai movimenti o rilevazioni compaiono da soli. Qui sotto ci sono solo quelli che hai aggiunto a mano con il pulsante <b>+</b> in alto: puoi rimuoverli se li hai creati per errore.</p>
         <div class="chips" id="chipsAnni"></div>
+        <button class="btn" id="btnAnno" style="margin-top:12px">Aggiungi un anno</button>
       </div>
 
       </div>
@@ -1040,7 +1087,13 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
         </div>
       </div>
       <label class="f"><span>Data</span><input type="date" id="fData"></label>
-      <label class="f"><span>Importo €</span><input type="number" id="fImporto" step="0.01" min="0" placeholder="0,00"></label>
+      <label class="f"><span id="lblImporto">Importo €</span>
+        <div class="riga-importo">
+          <input type="number" id="fImporto" step="0.01" min="0" placeholder="0,00">
+          <select id="fValuta" aria-label="Valuta"></select>
+        </div>
+      </label>
+      <div class="f full"><div class="cambio-nota" id="notaCambio"></div></div>
       <label class="f" id="wArg"><span>Argomento</span><select id="fArg"></select></label>
       <label class="f" id="wPort"><span id="lblPort">Portafoglio</span><select id="fPortM"></select></label>
       <label class="f" id="wPortDest" style="display:none"><span>Al portafoglio</span><select id="fPortDest"></select></label>
@@ -1190,31 +1243,38 @@ function defaults(){
     transactions:[],
     rettifiche:[],
     conti:[
-      {id:"ibkr", nome:"IBKR", tipo:"Broker", snapshots:[]},
-      {id:"previambiente", nome:"Previambiente", tipo:"Fondo pensione", snapshots:[]},
-      {id:"a2a", nome:"Azioni A2A", tipo:"Azioni", snapshots:[]}
+      {id:"conto1", nome:"Conto investimento", tipo:"Broker", snapshots:[]}
     ],
     config:{
-      schema:8,
+      schema:9,
+      lingua:"it",
       argomentiUscite:["Alimentari","Casa","Bollette","Trasporti","Salute","Svago","Abbonamenti","Shopping","Ristoranti","Viaggi","Risparmio","Investimenti","Altro"],
       argomentiEntrate:["Stipendio","Rimborso","Regalo","Vendita","Interessi","Altro"],
-      portafogli:["Conto corrente","Contanti","Carta di credito","Prepagata","PayPal"],
-      saldiInizialiPortafogli:{},
-      portafogliArchiviati:[],
       necessita:["Necessaria","Utile","Superflua"],
       stabilita:["Stabile","Saltuario","Una tantum","Non classificabile"],
       allocazioni:["Fondo di emergenza","Casa","Trading","Investimenti","Riscatto auto","Non allocato"],
       saldiIniziali:{"Fondo di emergenza":0,"Casa":0,"Trading":0,"Investimenti":0,"Riscatto auto":0,"Non allocato":0},
       obiettivi:{"Fondo di emergenza":0,"Casa":0,"Trading":0,"Investimenti":0,"Riscatto auto":0,"Non allocato":0},
-      anni:[],
       statoFondi:{},
+      portafogli:["Conto corrente","Contanti","Carta di credito","Prepagata","PayPal"],
       saldiInizialiPortafogli:{},
       portafogliArchiviati:[],
+      /* ── valute ── */
+      valutaBase:"EUR",
+      valutePortafogli:{},         /* portafoglio → valuta abituale */
+      portafogliMultivaluta:["Contanti"],  /* tengono le valute separate */
+      saldiInizialiValute:{},      /* "Contanti|USD" → importo iniziale */
+      tassi:{},                    /* quante unità estere per 1 unità base */
+      tassiData:"",
+      /* ── preferenze ── */
+      ordineMovimenti:"desc",
+      anni:[],
       regole:[]
     }
   };
 }
 
+/* ── Stato in memoria ── */
 var S = normalizzaStato(load());
 var view = "riepilogo";
 var year = new Date().getFullYear();
@@ -1223,8 +1283,6 @@ var editingId = null;
 var editingAcct = null, editingSnap = null;
 var formTipo = "Uscita";
 
-/* Rimuove i fondi ereditati (non previsti dai default) rimasti senza dati:
-   finché contengono qualcosa restano, così nulla sparisce di nascosto. */
 function pulisciAllocazioni(d){
   var previsti = defaults().config.allocazioni;
   var superflui = d.config.allocazioni.filter(function(a){ return previsti.indexOf(a)<0; });
@@ -1405,7 +1463,20 @@ function load(){
     if(!Array.isArray(d.rettifiche)) d.rettifiche = [];
     if(!d.config.saldiInizialiPortafogli) d.config.saldiInizialiPortafogli = {};
     if(!Array.isArray(d.config.portafogliArchiviati)) d.config.portafogliArchiviati = [];
-    d.config.schema = 8;
+    /* schema 9: valute, ordinamento, lingua */
+    if(schemaPrec < 9){
+      if(!d.config.valutaBase) d.config.valutaBase = "EUR";
+      if(!d.config.valutePortafogli) d.config.valutePortafogli = {};
+      d.config.portafogli.forEach(function(p){
+        if(!d.config.valutePortafogli[p]) d.config.valutePortafogli[p] = d.config.valutaBase;
+      });
+      if(!Array.isArray(d.config.portafogliMultivaluta)) d.config.portafogliMultivaluta = [];
+      if(!d.config.saldiInizialiValute) d.config.saldiInizialiValute = {};
+      if(!d.config.tassi) d.config.tassi = {};
+      if(!d.config.ordineMovimenti) d.config.ordineMovimenti = "desc";
+      if(!d.config.lingua) d.config.lingua = "it";
+    }
+    d.config.schema = 9;
     pulisciAllocazioni(d);
     normalizzaStato(d);
     if(!Array.isArray(d.conti) || !d.conti.length) d.conti = base.conti;
@@ -1452,6 +1523,7 @@ function fingerprint(t){
           (t.portafoglio||"").toLowerCase()].join("|");
 }
 function toast(msg){
+  if(typeof trDin==="function") msg=trDin(msg);
   var t=$("toast"); t.textContent=msg; t.classList.add("on");
   clearTimeout(toast._t); toast._t=setTimeout(function(){t.classList.remove("on");},2600);
 }
@@ -1502,6 +1574,38 @@ $("nav").addEventListener("click",function(e){
 });
 
 $("yearSel").addEventListener("change",function(){ year=+this.value; renderAll(); });
+$("prefOrdine").addEventListener("change",function(){
+  S.config.ordineMovimenti=this.value; save(); renderAll();
+  toast(this.value==="desc" ? "Prima i movimenti più recenti" : "Prima i movimenti più vecchi");
+});
+$("prefLingua").addEventListener("change",function(){
+  S.config.lingua=this.value; save();
+  ripristinaItaliano();
+  renderAll();
+  setTimeout(function(){ traduciPagina(); },0);
+  toast(this.value==="en" ? "Language set to English" : "Lingua impostata su italiano");
+});
+$("valBase").addEventListener("change",function(){
+  var v=this.value;
+  if(v===valutaBase()) return;
+  if(!confirm("Cambiare la valuta principale in "+v+"?\n\n"+
+              "Gli importi già registrati NON vengono riconvertiti: restano i numeri che sono. "+
+              "Conviene farlo solo all\u0027inizio, prima di inserire i movimenti.")){
+    this.value=valutaBase(); return;
+  }
+  S.config.valutaBase=v;
+  delete S.config.tassi[v];
+  save(); renderAll(); toast("Valuta principale: "+v);
+});
+$("btnScaricaTassi").addEventListener("click",scaricaTassi);
+$("btnAggiungiValuta").addEventListener("click",function(){
+  var v=$("nuovaValuta").value;
+  if(!v){ toast("Scegli una valuta"); return; }
+  S.config.tassi=S.config.tassi||{};
+  if(S.config.tassi[v]==null) S.config.tassi[v]=1;
+  save(); renderValute();
+  toast(v+" aggiunta: scrivi il tasso o scaricali tutti");
+});
 $("btnMenu").addEventListener("click",apriMenu);
 $("menuChiudi").addEventListener("click",chiudiMenu);
 $("tenda").addEventListener("click",chiudiMenu);
@@ -1564,6 +1668,7 @@ function renderAll(){
     costruisciMenu();
     return;
   }
+  if(typeof traduciPagina==="function") setTimeout(function(){ traduciPagina(); },0);
   if(view==="movimenti") renderMovimenti();
   if(view==="riepilogo") renderRiepilogo();
   if(view==="investimenti") renderInvestimenti();
@@ -1647,7 +1752,14 @@ function currentFiltered(){
       if(hay.indexOf(q)<0) return false;
     }
     return true;
-  }).sort(function(a,b){ return a.data<b.data?-1:a.data>b.data?1:0; });
+  }).sort(function(a,b){
+    /* l'ordine è una preferenza: chi registra ogni giorno vuole il
+       più recente in cima, chi ricontrolla i conti preferisce il contrario */
+    var giu = (S.config.ordineMovimenti||"desc")==="desc" ? -1 : 1;
+    if(a.data!==b.data) return (a.data<b.data ? 1 : -1) * (giu===-1?1:-1);
+    var ia=tx().indexOf(a), ib=tx().indexOf(b);
+    return giu===-1 ? ib-ia : ia-ib;
+  });
 }
 
 /* ── Popover di colonna ── */
@@ -1944,6 +2056,32 @@ function aggiornaFormTipo(){
   }
 }
 
+/* Un portafoglio in valuta estera propone la sua; quelli che tengono
+   le valute distinte partono dalla base, perché in tasca puoi avere
+   di tutto. */
+function valutaPredefinitaPer(p){
+  if(!p) return valutaBase();
+  if(portafoglioMultivaluta(p)) return valutaBase();
+  return valutaDiPortafoglio(p);
+}
+
+function aggiornaNotaCambio(){
+  var box=$("notaCambio");
+  if(!box) return;
+  var v=$("fValuta") ? $("fValuta").value : valutaBase();
+  var imp=parseFloat($("fImporto").value);
+  $("lblImporto").textContent = "Importo " + simboloValuta(v);
+  if(v===valutaBase() || !isFinite(imp) || !imp){ box.textContent=""; return; }
+  var t=tassoVerso(v);
+  if(!t){
+    box.innerHTML='<span class="neg">Tasso di cambio non disponibile per '+esc(v)+
+      '</span>: scaricalo dalle impostazioni, altrimenti l\u0027importo viene registrato così com\u0027è.';
+    return;
+  }
+  box.textContent = "Registrato come " + money(converti(imp, v)) +
+    " (1 " + v + " = " + t.toFixed(4) + " " + valutaBase() + ")";
+}
+
 function openTx(id){
   editingId=id||null;
   var t = id ? tx().find(function(x){return x.id===id;}) : null;
@@ -1959,6 +2097,15 @@ function openTx(id){
   if(t && t.portafoglioDest && listaDest.indexOf(t.portafoglioDest)<0) listaDest=listaDest.concat([t.portafoglioDest]);
   fillSelect($("fPortM"), listaPort, "—", t?t.portafoglio:(listaPort[0]||""));
   fillSelect($("fPortDest"), listaDest, "— nessuno", t?(t.portafoglioDest||""):"");
+
+  /* valute disponibili: quella base, quelle con un tasso noto, e
+     quella già usata dalla voce che si sta modificando */
+  var valDisp = [valutaBase()].concat(
+    Object.keys(S.config.tassi||{}).filter(function(v){ return v!==valutaBase() && tassoVerso(v)>0; }).sort());
+  if(t && t.valuta && valDisp.indexOf(t.valuta)<0) valDisp.push(t.valuta);
+  fillSelect($("fValuta"), valDisp, null,
+             t ? valutaDi(t) : valutaPredefinitaPer($("fPortM").value));
+  aggiornaNotaCambio();
   fillSelect($("fAllocM"), perFrequenza(S.config.allocazioni,"allocazione"), "— "+FONDO_BASE,
              t?(t.allocazione||""):"");
   fillSelect($("fOrig"), perFrequenza(S.config.allocazioni,"origine"), null,
@@ -2004,17 +2151,32 @@ $("txSave").addEventListener("click",function(){
       return;
     }
   }
+  /* La valuta scelta decide cosa finisce nei conteggi: «importo» è
+     sempre nella valuta base, con il cambio congelato al momento del
+     salvataggio, mentre «importoVal» conserva la cifra che hai digitato. */
+  var valSel = $("fValuta") ? ($("fValuta").value || valutaBase()) : valutaBase();
+  var tassoSel = valSel===valutaBase() ? 1 : tassoVerso(valSel);
+  var impBase = valSel===valutaBase() ? Math.abs(imp)
+                                      : converti(Math.abs(imp), valSel, tassoSel);
+
   var rec={
     id: editingId || uid(),
     data:$("fData").value,
     tipo:formTipo,
-    importo:Math.abs(imp),
+    importo:impBase,
     argomento: formTipo==="Giroconto" ? "Risparmio" : $("fArg").value,
     dettaglio:$("fDett").value.trim(),
     portafoglio: $("fPortM").value,
     allocazione: alloc,
     necessita: formTipo==="Uscita" ? $("fNec").value : "—"
   };
+  /* si registra la valuta solo quando è diversa da quella base:
+     i movimenti in euro restano puliti come prima */
+  if(valSel!==valutaBase()){
+    rec.valuta = valSel;
+    rec.importoVal = Math.abs(imp);
+    if(tassoSel) rec.tasso = tassoSel;
+  }
   if(formTipo==="Entrata") rec.stabilita=$("fStab").value;
   if(formTipo==="Giroconto"){
     rec.origine=$("fOrig").value;
@@ -2292,6 +2454,96 @@ function monthlyTotals(y){
   }
   return out;
 }
+/* ═══════════════════════════════════════════════
+   Valute
+   Ogni movimento è registrato nella valuta base: il cambio viene
+   congelato al momento dell'inserimento, così i totali dei mesi
+   passati non si muovono più. Di ogni voce restano anche l'importo
+   e la valuta originali, per poterli rileggere.
+   ═══════════════════════════════════════════════ */
+var VALUTE = {
+  EUR:{s:"€",n:"Euro"},            USD:{s:"$",n:"Dollaro USA"},
+  GBP:{s:"£",n:"Sterlina"},        CHF:{s:"CHF",n:"Franco svizzero"},
+  JPY:{s:"¥",n:"Yen"},             CNY:{s:"¥",n:"Yuan"},
+  CAD:{s:"C$",n:"Dollaro canadese"}, AUD:{s:"A$",n:"Dollaro australiano"},
+  SEK:{s:"kr",n:"Corona svedese"}, NOK:{s:"kr",n:"Corona norvegese"},
+  DKK:{s:"kr",n:"Corona danese"},  PLN:{s:"zł",n:"Zloty"},
+  RON:{s:"lei",n:"Leu rumeno"},    HUF:{s:"Ft",n:"Fiorino"},
+  CZK:{s:"Kč",n:"Corona ceca"},    BGN:{s:"лв",n:"Lev"},
+  TRY:{s:"₺",n:"Lira turca"},      BRL:{s:"R$",n:"Real"},
+  INR:{s:"₹",n:"Rupia indiana"},   MXN:{s:"MX$",n:"Peso messicano"},
+  ZAR:{s:"R",n:"Rand"},            SGD:{s:"S$",n:"Dollaro di Singapore"},
+  HKD:{s:"HK$",n:"Dollaro di Hong Kong"}, NZD:{s:"NZ$",n:"Dollaro neozelandese"},
+  KRW:{s:"₩",n:"Won"},             ILS:{s:"₪",n:"Shekel"},
+  THB:{s:"฿",n:"Baht"},            PHP:{s:"₱",n:"Peso filippino"},
+  IDR:{s:"Rp",n:"Rupia indonesiana"}, MYR:{s:"RM",n:"Ringgit"},
+  ISK:{s:"kr",n:"Corona islandese"}
+};
+
+function valutaBase(){ return S.config.valutaBase || "EUR"; }
+function simboloValuta(v){ return (VALUTE[v] && VALUTE[v].s) || v; }
+function nomeValuta(v){ return (VALUTE[v] && VALUTE[v].n) || v; }
+function valutaDiPortafoglio(p){
+  return (S.config.valutePortafogli && S.config.valutePortafogli[p]) || valutaBase();
+}
+function portafoglioMultivaluta(p){
+  return (S.config.portafogliMultivaluta||[]).indexOf(p) >= 0;
+}
+function tassoVerso(v){
+  /* quante unità della valuta base vale una unità di v */
+  if(v === valutaBase()) return 1;
+  var t = Number((S.config.tassi||{})[v]);
+  return (isFinite(t) && t > 0) ? t : 0;
+}
+function tassoNoto(v){ return v === valutaBase() || tassoVerso(v) > 0; }
+
+function converti(importo, da, tasso){
+  if(da === valutaBase()) return Math.round(importo*100)/100;
+  var t = (tasso != null && isFinite(tasso) && tasso > 0) ? tasso : tassoVerso(da);
+  if(!t) return Math.round(importo*100)/100;   /* tasso ignoto: si tiene il valore */
+  return Math.round(importo*t*100)/100;
+}
+
+function moneyIn(n, v){
+  var s = money(n);
+  if(!v || v === valutaBase()) return s;
+  return s.replace("€", simboloValuta(v));
+}
+
+/* valuta e importo originali di un movimento */
+function valutaDi(t){ return t.valuta || valutaBase(); }
+function importoOriginale(t){
+  return t.importoVal != null ? Number(t.importoVal) : Number(t.importo)||0;
+}
+
+/* Per i portafogli che tengono le valute distinte: quanto c'è
+   fisicamente in ciascuna. */
+function saldiPerValuta(p, allaData){
+  var limite = allaData || "9999-12-31";
+  var out = {};
+  var iniz = (S.config.saldiInizialiValute||{})[p] || {};
+  Object.keys(iniz).forEach(function(v){ out[v] = Number(iniz[v])||0; });
+  if(!Object.keys(out).length) out[valutaDiPortafoglio(p)] = Number(S.config.saldiInizialiPortafogli[p])||0;
+
+  tx().forEach(function(t){
+    if(!t.data || t.data > limite) return;
+    var v = valutaDi(t), imp = importoOriginale(t);
+    if(t.tipo === "Giroconto"){
+      if(t.portafoglio === p){ out[v] = (out[v]||0) - imp; }
+      if(t.portafoglioDest === p){ out[v] = (out[v]||0) + imp; }
+      return;
+    }
+    if(t.portafoglio !== p) return;
+    if(t.tipo === "Entrata") out[v] = (out[v]||0) + imp;
+    if(t.tipo === "Uscita")  out[v] = (out[v]||0) - imp;
+  });
+  Object.keys(out).forEach(function(v){
+    out[v] = Math.round(out[v]*100)/100;
+    if(Math.abs(out[v]) < 0.005) delete out[v];
+  });
+  return out;
+}
+
 /* ═══════════════════════════════════════════════
    Saldo dei portafogli
    Un portafoglio è un contenitore reale: il conto, il contante,
@@ -2589,7 +2841,12 @@ var SEZIONI = [
   {id:"regole",     nome:"Allocazione automatica",  valore:function(){
       var n=(S.config.regole||[]).filter(function(r){ return r.attiva!==false; }).length;
       return n ? n+" attiv"+(n===1?"a":"e") : "nessuna"; }},
+  {id:"valute",     nome:"Valute",                 valore:function(){
+      var n=Object.keys(S.config.tassi||{}).length;
+      return valutaBase()+(n?" +"+n:""); }},
   {gruppo:"Applicazione"},
+  {id:"preferenze", nome:"Preferenze",             valore:function(){
+      return lingua()==="en" ? "English" : "Italiano"; }},
   {id:"anni",       nome:"Anni nel menu",           valore:function(){ return (S.config.anni||[]).length || "—"; }},
   {id:"pro",        nome:"Versione Pro"},
   {id:"drive",      nome:"Backup su Google Drive"},
@@ -2727,6 +2984,404 @@ function renderPatrimonio(){
          Math.abs(scarto)<0.01 ? "i due prospetti coincidono" : "i due prospetti non coincidono","fondi");
 }
 
+/* ═══════════════════════════════════════════════
+   Lingua
+   Il dizionario è indicizzato sul testo italiano: dopo ogni disegno
+   si scorre la pagina e si sostituisce ciò che vi compare. Una frase
+   non tradotta resta in italiano invece di sparire, e le modifiche
+   future non richiedono di ritoccare ogni singolo punto del codice.
+   ═══════════════════════════════════════════════ */
+var TESTI_EN = {
+  ", e un giroconto sposta denaro tra due fondi senza toccare il totale.": ", and a transfer moves money between two funds without changing the total.",
+  "0,00": "0.00",
+  "1 unità vale": "1 unit equals",
+  ": fissi la cifra reale e il conteggio riparte da lì, senza dover cercare l'errore.": ": you set the real figure and counting restarts from there, without hunting for the mistake.",
+  ": resta in elenco, evidenziato. Quando ne hai speso il capitale per la finalità prevista, segnalo come": ": it stays in the list, highlighted. Once you have spent it for its purpose, mark it as",
+  "A scaglioni": "Tiered",
+  "Aggiungi": "Add",
+  "Aggiungi fondo": "Add fund",
+  "Aggiungi regola": "Add rule",
+  "Aggiungi un anno": "Add a year",
+  "Aggiungi voce": "Add entry",
+  "Al portafoglio": "To wallet",
+  "Alla data": "As of",
+  "Allocazione": "Allocation",
+  "Allocazione automatica dalle entrate": "Automatic allocation from income",
+  "Allocazione dei risparmi": "Savings allocation",
+  "Andamento mensile": "Monthly trend",
+  "Anni nel menu": "Years in the menu",
+  "Anno": "Year",
+  "Annulla": "Cancel",
+  "Apri il menu": "Open the menu",
+  "Apri la diagnostica": "Open diagnostics",
+  "Argomenti delle entrate": "Income categories",
+  "Argomenti delle uscite": "Expense categories",
+  "Argomento": "Category",
+  "Attingi dal fondo": "Take from fund",
+  "Azzera filtri": "Clear filters",
+  "Backup su Google Drive": "Google Drive backup",
+  "Cancella tutto": "Delete everything",
+  "Capitale versato": "Capital invested",
+  "Carica dati di esempio": "Load sample data",
+  "Cerca ovunque": "Search everywhere",
+  "Chiudi": "Close",
+  "Contami": "Contami",
+  "Correggi": "Adjust",
+  "Correggi il saldo": "Adjust the balance",
+  "Dal più recente al più vecchio": "Newest first",
+  "Dal più vecchio al più recente": "Oldest first",
+  "Data": "Date",
+  "Dati": "Data",
+  "Descrizione della voce": "Description",
+  "Dettaglio": "Details",
+  "Dettaglio per mese": "Month by month",
+  "Dove sono i soldi": "Where the money is",
+  "Elenco separato da quello delle uscite: uno stesso nome può comparire in entrambi, se ha senso per te.": "A separate list from the expense one: the same name may appear in both, if that makes sense to you.",
+  "Elimina fondo": "Delete fund",
+  "English": "English",
+  "Entrata": "Income",
+  "Entrate": "Income",
+  "Entrate anno": "Income this year",
+  "Esporta backup JSON": "Export JSON backup",
+  "Finanze personali": "Personal finance",
+  "Fissa questo saldo": "Set this balance",
+  "Fondi di allocazione": "Allocation funds",
+  "Fondo": "Fund",
+  "Gestisci le preferenze pubblicitarie": "Manage ad preferences",
+  "Giroconto": "Transfer",
+  "Gli anni in cui hai movimenti o rilevazioni compaiono da soli. Qui sotto ci sono solo quelli che hai aggiunto a mano con il pulsante": "Years with transactions or readings appear on their own. Below are only those you added by hand with the button",
+  "Ho capito": "Got it",
+  "I fondi sono una suddivisione teorica del tuo denaro liquido: la loro somma è sempre pari a quanto hai. Una spesa": "Funds are a notional split of your liquid money: their sum always equals what you have. An expense",
+  "I tassi arrivano dalla Banca Centrale Europea tramite un servizio pubblico e gratuito. Lo scaricamento non invia nessun tuo dato: chiede solo l'elenco dei cambi del giorno. Puoi anche correggerli a mano, e senza rete restano validi gli ultimi scaricati.": "Rates come from the European Central Bank through a free public service. Downloading them sends none of your data: it only asks for the day's rate list. You can also correct them by hand, and without a connection the last downloaded ones stay valid.",
+  "Il saldo iniziale è quanto avevi già da parte in quel fondo prima di iniziare a registrare i movimenti. L'obiettivo è la cifra a cui vuoi arrivare; lascia zero se non hai un traguardo. Rinominando un fondo si aggiornano anche i movimenti e le regole che lo usano.": "The starting balance is what you had already set aside in that fund before you began recording. The goal is the figure you want to reach; leave zero if you have none. Renaming a fund also updates the transactions and rules that use it.",
+  "Il saldo iniziale è quanto c'era nel portafoglio": "The starting balance is what was in the wallet",
+  "Importa file JSON": "Import JSON file",
+  "Importo": "Amount",
+  "Importo €": "Amount €",
+  "Impostazioni": "Settings",
+  "Installa app": "Install app",
+  "Installare l'app": "Installing the app",
+  "Investimenti": "Investments",
+  "Italiano": "Italiano",
+  "L'importazione riconosce i duplicati: una voce già presente (stessa data, importo, dettaglio e portafoglio) non viene inserita due volte. Puoi quindi rilanciare lo script sullo stesso mese senza timori.": "Importing recognises duplicates: an entry already present (same date, amount, details and wallet) is not added twice. So you can safely re-run the script on the same month.",
+  "La lingua cambia le voci dell'applicazione. Gli argomenti, i portafogli e i dettagli che hai scritto tu restano come li hai inseriti.": "The language changes the app's own labels. Categories, wallets and details you typed yourself stay as you wrote them.",
+  "Le regole si applicano in ordine alle entrate del mese: prima la riga in cima, poi le altre finché il denaro basta. Le percentuali si calcolano sul totale delle entrate del mese. Ogni valore può essere espresso in euro o in percentuale, e le due cifre restano memorizzate entrambe.": "Rules apply in order to the month's income: the top row first, then the others while the money lasts. Percentages are computed on the month's total income. Each value can be given in currency or as a percentage, and both figures are kept.",
+  "Lingua": "Language",
+  "Livelli di necessità": "Necessity levels",
+  "Mancante": "Remaining",
+  "Media/mese": "Average/month",
+  "Menu": "Menu",
+  "Mese": "Month",
+  "Movimenti": "Transactions",
+  "Necessità": "Necessity",
+  "Necessità / Stabilità": "Necessity / Stability",
+  "Non allocato": "Unallocated",
+  "Nota": "Note",
+  "Numero di entrate / uscite": "Number of income / expense entries",
+  "Nuova rilevazione": "New reading",
+  "Nuova voce": "New entry",
+  "Nuovo argomento di entrata": "New income category",
+  "Nuovo argomento di spesa": "New expense category",
+  "Nuovo fondo (es. Vacanze)": "New fund (e.g. Holidays)",
+  "Nuovo livello": "New level",
+  "Nuovo portafoglio": "New wallet",
+  "Obiettivo": "Goal",
+  "Obiettivo €": "Goal €",
+  "Ogni portafoglio parte dal valore che imposti in Impostazioni e si aggiorna da solo con i movimenti. Se dopo qualche mese il saldo non torna, premi": "Each wallet starts from the value you set in Settings and keeps itself up to date. If after a few months the balance is off, press",
+  "Ogni rilevazione è una fotografia del saldo a una certa data. Le variazioni sono sempre calcolate": "Each reading is a snapshot of the balance on a given date. Changes are always computed",
+  "Ordinati dal più necessario al più rinunciabile: la posizione determina il colore dell'etichetta. Il primo della lista è quello proposto per le nuove uscite.": "Ordered from the most necessary to the most expendable: the position sets the label colour. The first one is suggested for new expenses.",
+  "Ordinati dalla più prevedibile alla meno. Il primo della lista è quello proposto per le nuove entrate.": "Ordered from the most predictable to the least. The first one is suggested for new income.",
+  "Ordine dei movimenti": "Transaction order",
+  "Patrimonio": "Net worth",
+  "Patrimonio investito": "Invested assets",
+  "Piano di allocazione —": "Allocation plan —",
+  "Plus/minusvalenza": "Gain/loss",
+  "Portafogli": "Wallets",
+  "Portafoglio": "Wallet",
+  "Preferenze": "Preferences",
+  "Preleva dal fondo": "Take from fund",
+  "Privacy e pubblicità": "Privacy and ads",
+  "Progresso": "Progress",
+  "Puoi rivedere in qualsiasi momento le tue scelte sugli annunci personalizzati.": "You can review your personalised-ads choices at any time.",
+  "Quota": "Share",
+  "Raggiunto l'obiettivo puoi segnare un fondo come": "Once the goal is reached you can mark a fund as",
+  "Riepilogo": "Summary",
+  "Risparmio": "Savings",
+  "Saldo": "Balance",
+  "Saldo anno": "Balance this year",
+  "Saldo del mese": "Balance this month",
+  "Saldo iniziale": "Starting balance",
+  "Saldo iniziale €": "Starting balance €",
+  "Saldo oggi": "Balance today",
+  "Saldo reale €": "Actual balance €",
+  "Saldo €": "Balance €",
+  "Salva rilevazione": "Save reading",
+  "Salva voce": "Save entry",
+  "Scarica i tassi aggiornati": "Download latest rates",
+  "Serve solo in fase di sviluppo: controlla che i plugin del telefono rispondano. Puoi cancellare": "For development only: it checks that the phone plugins respond. You can delete",
+  "Spesa superflua": "Unnecessary expense",
+  "Sposta denaro da un fondo all'altro senza spenderlo": "Moves money between funds without spending it",
+  "Sposta i movimenti su": "Move transactions to",
+  "Stabilità delle entrate": "Income stability",
+  "Stabilità entrata": "Income stability",
+  "Struttura": "Breakdown",
+  "Svuota la cache e ricarica": "Clear the cache and reload",
+  "Tassi di cambio": "Exchange rates",
+  "Tasso di risparmio": "Savings rate",
+  "Tipo": "Type",
+  "Totale": "Total",
+  "Tutte le voci sono nel menu laterale.": "All the options are in the side menu.",
+  "Tutti": "All",
+  "Tutti i conteggi sono espressi in questa valuta. Un movimento inserito in valuta diversa viene convertito al momento del salvataggio, e il cambio usato resta fissato: i totali dei mesi passati non cambiano più.": "All figures are shown in this currency. An entry recorded in another currency is converted when you save it, and the rate used stays fixed: past months never change again.",
+  "Ultima verifica": "Last check",
+  "Uscita": "Expense",
+  "Uscite": "Expenses",
+  "Uscite anno": "Expenses this year",
+  "Uscite per argomento — anno": "Expenses by category — year",
+  "Valore unico": "Single value",
+  "Valuta": "Currency",
+  "Valuta principale": "Main currency",
+  "Valute": "Currencies",
+  "Verifica del contenitore nativo": "Native container check",
+  "Verrà eliminato insieme al fondo.": "It will be deleted along with the fund.",
+  "Versato dall'ultima rilevazione €": "Added since last reading €",
+  "Versione Pro": "Pro version",
+  "Voci da completare": "Entries to complete",
+  "Voci&nbsp;E/U": "Entries&nbsp;I/E",
+  "aggiunge": "adds",
+  "al netto dei versamenti": "net of deposits",
+  "completato": "reached",
+  "concluso": "closed",
+  "dal fondo indicato (o da": "from the chosen fund (or from",
+  "del primo movimento che hai registrato. Si imposta una volta sola: da lì in poi il saldo si aggiorna da solo.": "the first transaction you recorded. You set it once: from then on the balance keeps itself up to date.",
+  "dettaglio, argomento, portafoglio…": "details, category, wallet…",
+  "e scende in fondo, in secondo piano. Entrambi i passaggi sono reversibili.": "and it moves to the bottom, dimmed. Both steps can be undone.",
+  "facoltativa": "optional",
+  "in alto: puoi rimuoverli se li hai creati per errore.": "at the top: you can remove them if you added them by mistake.",
+  "prima": "before",
+  "prima di pubblicare.": "before publishing.",
+  "saldo ÷ entrate": "balance ÷ income",
+  "salvato in locale": "stored locally",
+  "se non ne scegli uno), un'entrata": "if you pick none), income",
+  "somma di tutti i versamenti registrati": "sum of all recorded deposits",
+  "sottrae": "subtracts",
+  "sul capitale": "on capital",
+  "— saldo di ogni portafoglio, aggiornato a oggi": "— balance of each wallet, up to date",
+  "— tutti gli anni, saldi iniziali inclusi": "— all years, starting balances included",
+  "— voci": "— entries",
+  "← Menu": "← Menu",
+  "Aggiunge alcune voci di esempio ai dati attuali. Procedo?": "This adds a few sample entries to your current data. Continue?",
+  "Aggiunto": "Added",
+  "Alcuni dati erano incompleti: sistemati": "Some data was incomplete and has been repaired",
+  "App installata: la trovi tra le tue applicazioni": "App installed \u2014 you'll find it with your other apps",
+  "Backup scaricato": "Backup downloaded",
+  "Correzione eliminata": "Adjustment removed",
+  "Dati di esempio caricati": "Sample data loaded",
+  "Dati sostituiti dal backup": "Data replaced from backup",
+  "Deve restare almeno un livello": "At least one level must remain",
+  "Esiste gi\u00e0": "Already exists",
+  "Esiste gi\u00e0 un fondo con questo nome": "A fund with this name already exists",
+  "File non leggibile: non \u00e8 un JSON valido": "File unreadable: not valid JSON",
+  "File non riconosciuto": "File not recognised",
+  "Il nome non pu\u00f2 essere vuoto": "The name cannot be empty",
+  "Inserisci il saldo": "Enter the balance",
+  "Inserisci il saldo reale": "Enter the actual balance",
+  "Inserisci un anno tra il 1990 e il 2100": "Enter a year between 1990 and 2100",
+  "Inserisci un importo maggiore di zero": "Enter an amount greater than zero",
+  "Manca la data": "The date is missing",
+  "Nessun giroconto generato in questo mese": "No transfers generated this month",
+  "Nessun importo da spostare: mancano entrate o regole": "Nothing to move: there are no incomes or no rules",
+  "Nessun movimento nel file": "No entries in the file",
+  "Non sono riuscito a scaricare i tassi: controlla la connessione": "Couldn't download the rates \u2014 check your connection",
+  "Portafoglio rimosso": "Wallet removed",
+  "Regola aggiunta \u2014 ora imposta i valori": "Rule added \u2014 now set its values",
+  "Regola eliminata": "Rule deleted",
+  "Rilevazione eliminata": "Reading deleted",
+  "Rilevazione salvata": "Reading saved",
+  "Salvataggio non riuscito: spazio esaurito": "Couldn't save: storage is full",
+  "Scegli una valuta": "Choose a currency",
+  "Scrivi il nome del fondo": "Type the fund name",
+  "Tutti i dati cancellati": "All data deleted",
+  "Un giroconto deve spostare qualcosa: cambia fondo o portafoglio": "A transfer must move something: change the fund or the wallet",
+  "Valuta rimossa": "Currency removed",
+  "Voce aggiunta": "Entry added",
+  "Voce aggiornata": "Entry updated",
+  "Voce eliminata": "Entry deleted",
+};
+
+function lingua(){ return S.config.lingua || "it"; }
+
+function tr(s){
+  if(lingua()==="it") return s;
+  var pulito=String(s).replace(/\s+/g," ").trim();
+  return TESTI_EN[pulito] || s;
+}
+
+/* frasi con numeri dentro: si traduce la struttura */
+var SCHEMI_EN = [
+  [/^(\d+) voci aggiunte, (\d+) duplicat[ei] ignorat[ei]$/, "$1 entries added, $2 duplicates skipped"],
+  [/^(\d+) voci aggiunte$/, "$1 entries added"],
+  [/^(\d+) tassi aggiornati al (.+)$/, "$1 rates updated on $2"],
+  [/^Voce aggiunta$/, "Entry added"],
+  [/^Voce aggiornata$/, "Entry updated"],
+  [/^Voce eliminata$/, "Entry deleted"],
+  [/^Rilevazione salvata$/, "Reading saved"],
+  [/^Portafoglio rimosso$/, "Wallet removed"],
+  [/^Valuta rimossa$/, "Currency removed"],
+  [/^Aggiunto$/, "Added"],
+  [/^Rimosso$/, "Removed"],
+  [/^Salvato$/, "Saved"],
+  [/^Dati (\w+)$/, "Data $1"],
+  [/^Nessun movimento nel (\d+)$/, "No transactions in $1"],
+  [/^(\d+) movimenti$/, "$1 transactions"]
+];
+
+function trDin(s){
+  if(lingua()==="it") return s;
+  var p=String(s).replace(/\s+/g," ").trim();
+  if(TESTI_EN[p]) return TESTI_EN[p];
+  for(var i=0;i<SCHEMI_EN.length;i++){
+    if(SCHEMI_EN[i][0].test(p)) return p.replace(SCHEMI_EN[i][0], SCHEMI_EN[i][1]);
+  }
+  return s;
+}
+
+/* Scorre la pagina e traduce ciò che è visibile. Salva l'originale,
+   così tornando all'italiano si recupera senza ridisegnare. */
+function traduciPagina(radice){
+  if(lingua()==="it"){ ripristinaItaliano(radice); return; }
+  var r=radice||document.body;
+  var camm=document.createTreeWalker ? document.createTreeWalker(r, 4, null) : null;
+  if(camm){
+    var nodi=[], n;
+    while((n=camm.nextNode())) nodi.push(n);
+    nodi.forEach(function(nodo){
+      var t=nodo.nodeValue;
+      if(!t || !/[a-zàèéìòù]{2}/i.test(t)) return;
+      var nuovo=tr(t);
+      if(nuovo!==t){
+        if(nodo._it==null) nodo._it=t;
+        nodo.nodeValue = t.replace(t.replace(/\s+/g," ").trim(), nuovo);
+      }
+    });
+  }
+  ["placeholder","title","aria-label"].forEach(function(attr){
+    [].forEach.call(r.querySelectorAll("["+attr+"]"), function(el){
+      var v=el.getAttribute(attr), nuovo=tr(v);
+      if(nuovo!==v){ if(!el.dataset["it"+attr]) el.dataset["it"+attr]=v; el.setAttribute(attr,nuovo); }
+    });
+  });
+}
+
+function ripristinaItaliano(radice){
+  var r=radice||document.body;
+  var camm=document.createTreeWalker ? document.createTreeWalker(r, 4, null) : null;
+  if(camm){
+    var nodi=[], n;
+    while((n=camm.nextNode())) nodi.push(n);
+    nodi.forEach(function(nodo){ if(nodo._it!=null){ nodo.nodeValue=nodo._it; nodo._it=null; } });
+  }
+  ["placeholder","title","aria-label"].forEach(function(attr){
+    [].forEach.call(r.querySelectorAll("["+attr+"]"), function(el){
+      var salvato=el.dataset["it"+attr];
+      if(salvato){ el.setAttribute(attr,salvato); delete el.dataset["it"+attr]; }
+    });
+  });
+}
+
+/* ── Tassi di cambio ── */
+var SERVIZI_TASSI = [
+  { url:function(b){ return "https://api.frankfurter.dev/v2/latest?base="+b; } },
+  { url:function(b){ return "https://api.frankfurter.app/latest?from="+b; } }
+];
+
+function scaricaTassi(){
+  var b=valutaBase();
+  var btn=$("btnScaricaTassi");
+  if(btn){ btn.disabled=true; btn.textContent="Scarico…"; }
+
+  function tenta(i){
+    if(i>=SERVIZI_TASSI.length){
+      if(btn){ btn.disabled=false; btn.textContent="Scarica i tassi aggiornati"; }
+      toast("Non sono riuscito a scaricare i tassi: controlla la connessione");
+      return;
+    }
+    fetch(SERVIZI_TASSI[i].url(b))
+      .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+      .then(function(d){
+        var r = d.rates || d.quotes || null;
+        if(!r || !Object.keys(r).length) throw new Error("risposta vuota");
+        S.config.tassi = S.config.tassi || {};
+        var n=0;
+        Object.keys(r).forEach(function(v){
+          var q=Number(r[v]);
+          /* il servizio dà quante unità estere per una base: a noi
+             serve il contrario, quante base per una unità estera */
+          if(isFinite(q) && q>0){ S.config.tassi[v]=Math.round((1/q)*1000000)/1000000; n++; }
+        });
+        delete S.config.tassi[b];
+        S.config.tassiData = d.date || new Date().toISOString().slice(0,10);
+        save();
+        if(btn){ btn.disabled=false; btn.textContent="Scarica i tassi aggiornati"; }
+        renderValute();
+        toast(n+" tassi aggiornati al "+dmy(S.config.tassiData));
+      })
+      .catch(function(){ tenta(i+1); });
+  }
+  tenta(0);
+}
+
+function renderValute(){
+  var selB=$("valBase");
+  if(!selB) return;
+  fillSelect(selB, Object.keys(VALUTE), null, valutaBase());
+
+  var st=$("statoTassi");
+  var quando=S.config.tassiData;
+  st.innerHTML = quando
+    ? '<p class="hint" style="margin:0 0 12px">Ultimo aggiornamento: <b>'+dmy(quando)+'</b></p>'
+    : '<p class="hint" style="margin:0 0 12px">Nessun tasso ancora scaricato: finché mancano, gli importi in valuta estera vengono registrati senza conversione.</p>';
+
+  var body=$("tassiBody"); body.innerHTML="";
+  var usate=Object.keys(S.config.tassi||{}).sort();
+  if(!usate.length){
+    var tr0=el("tr"), td0=el("td"); td0.colSpan=3;
+    td0.innerHTML='<div class="empty"><strong>Nessuna valuta configurata</strong>Premi «Scarica i tassi aggiornati» per averle tutte.</div>';
+    tr0.appendChild(td0); body.appendChild(tr0);
+  }
+  usate.forEach(function(v){
+    var tr=el("tr");
+    tr.appendChild(cella("Valuta","testata", v+" — "+nomeValuta(v)));
+    var c=cella("1 unità vale","num");
+    var i=document.createElement("input");
+    i.type="number"; i.step="0.000001"; i.style.textAlign="right";
+    i.value=S.config.tassi[v];
+    i.addEventListener("change",function(){
+      var n=parseFloat(this.value);
+      if(isFinite(n)&&n>0){ S.config.tassi[v]=n; save(); renderValute(); }
+    });
+    c.appendChild(i);
+    c.appendChild(el("span","dim"," "+valutaBase()));
+    tr.appendChild(c);
+    var az=cella("","azioni"), w=el("div","row-tools");
+    var usi=tx().filter(function(t){ return t.valuta===v; }).length;
+    var b=el("button","btn sm danger","Rimuovi");
+    b.addEventListener("click",function(){
+      if(usi && !confirm("«"+v+"» è usata da "+usi+" moviment"+(usi===1?"o":"i")+
+        ".\n\nRimuoverla comunque? Gli importi già registrati non cambiano.")) return;
+      delete S.config.tassi[v]; save(); renderValute(); toast("Valuta rimossa");
+    });
+    w.appendChild(b); az.appendChild(w); tr.appendChild(az);
+    body.appendChild(tr);
+  });
+
+  var manca=Object.keys(VALUTE).filter(function(v){
+    return v!==valutaBase() && !(v in (S.config.tassi||{})); }).sort();
+  fillSelect($("nuovaValuta"), manca, "— scegli una valuta", "");
+}
+
+/* ── Riquadro versione Pro ── */
+
 function renderPortafogli(){
   var body=$("portBody"), foot=$("portFoot");
   if(!body) return;
@@ -2757,6 +3412,16 @@ function renderPortafogli(){
     tr.appendChild(nm);
     tr.appendChild(cella("Saldo","num testata "+(v<0?"neg":v>0?"pos":"dim"),money(v)));
     tr.appendChild(cella("Quota","num dim", lordo>0?pct(Math.max(0,v)/lordo*100):"—"));
+
+    if(portafoglioMultivaluta(p)){
+      var per=saldiPerValuta(p);
+      var chiavi=Object.keys(per).sort();
+      if(chiavi.length){
+        var det=el("div","dim"); det.style.cssText="font-size:12px;margin-top:3px";
+        det.textContent = chiavi.map(function(v){ return moneyIn(per[v],v); }).join(" · ");
+        nm.appendChild(det);
+      }
+    }
 
     var uv=cella("Ultima verifica");
     if(ultima){
@@ -3618,6 +4283,31 @@ function renderSetPortafogli(){
     });
     c1.appendChild(i1); tr.appendChild(c1);
 
+    var cv=cella("Valuta","num");
+    var sv=document.createElement("select");
+    Object.keys(VALUTE).forEach(function(v){
+      var o=document.createElement("option"); o.value=v; o.textContent=v;
+      if(v===valutaDiPortafoglio(p)) o.selected=true;
+      sv.appendChild(o);
+    });
+    sv.addEventListener("change",function(){
+      S.config.valutePortafogli[p]=this.value; save(); renderImpostazioni();
+    });
+    cv.appendChild(sv);
+    var lm=document.createElement("label");
+    lm.style.cssText="display:flex;gap:6px;align-items:center;margin-top:6px;font-size:12px;color:var(--muted);cursor:pointer";
+    var ck=document.createElement("input"); ck.type="checkbox";
+    ck.checked=portafoglioMultivaluta(p);
+    ck.addEventListener("change",function(){
+      S.config.portafogliMultivaluta = S.config.portafogliMultivaluta || [];
+      if(this.checked){ if(!portafoglioMultivaluta(p)) S.config.portafogliMultivaluta.push(p); }
+      else S.config.portafogliMultivaluta = S.config.portafogliMultivaluta.filter(function(x){ return x!==p; });
+      save(); renderImpostazioni();
+    });
+    lm.appendChild(ck); lm.appendChild(document.createTextNode("più valute"));
+    cv.appendChild(lm);
+    tr.appendChild(cv);
+
     tr.appendChild(cella("Saldo oggi","num "+(oggi<0?"neg":oggi>0?"pos":"dim"),money(oggi)));
 
     var az=cella("","azioni"), w=el("div","row-tools");
@@ -3663,6 +4353,7 @@ function renderSetPortafogli(){
   var ftr=el("tr");
   ftr.appendChild(cella("","","Totale"));
   ftr.appendChild(cella("Saldo iniziale","num",money(totIniz)));
+  ftr.appendChild(cella("",""));
   ftr.appendChild(cella("Saldo oggi","num",money(Math.round(totOggi*100)/100)));
   ftr.appendChild(cella("",""));
   foot.appendChild(ftr);
