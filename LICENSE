@@ -1,0 +1,11 @@
+Copyright (c) 2026 Cristian Muzio
+
+Tutti i diritti riservati.
+
+Questo software e la relativa documentazione sono di proprietà dell'autore.
+Non ne è consentita la copia, la distribuzione, la modifica o l'uso a fini
+commerciali da parte di terzi senza autorizzazione scritta.
+
+I componenti di terze parti utilizzati (Capacitor e i relativi plugin)
+restano soggetti alle rispettive licenze, consultabili nella cartella
+node_modules dopo l'installazione.
