@@ -2720,6 +2720,15 @@ document.addEventListener("click",function(e){
   if(th){ apriPop(th, th.dataset.col); return; }
   if(!e.target.closest("#colPop")) chiudiPop();
 });
+/* Un numero con la parola accordata: accorda(1, "voce nuova", "voci
+   nuove") da' «1 voce nuova», con 5 da' «5 voci nuove». Fino alla 1.5.2
+   il numero si incollava al plurale, e con una sola voce usciva «1 voci».
+   Le altre parole che hanno lo stesso difetto (fondi, giroconti,
+   movimenti, rilevazioni) passeranno di qui nella 1.6.0. */
+function accorda(n, uno, tanti){
+  return n+" "+(n===1 ? uno : tanti);
+}
+
 function renderMovimenti(){
   renderMonthStrip();
   $("viewTitle").textContent = trDin("Movimenti")+" — "+etichettaPeriodo();
@@ -2736,9 +2745,9 @@ function renderMovimenti(){
   var inc=sumBy(all,"Entrata"), out=sumBy(all,"Uscita"), net=inc-out;
   var sup=all.filter(t=>t.tipo==="Uscita"&&(S.config.superflui||[]).indexOf(t.necessita)>=0).reduce((a,t)=>a+(+t.importo||0),0);
   $("mIn").textContent=money(inc);
-  $("mInN").textContent=trDin(all.filter(t=>t.tipo==="Entrata").length+" voci");
+  $("mInN").textContent=trDin(accorda(all.filter(t=>t.tipo==="Entrata").length, "voce", "voci"));
   $("mOut").textContent=money(out);
-  $("mOutN").textContent=trDin(all.filter(t=>t.tipo==="Uscita").length+" voci");
+  $("mOutN").textContent=trDin(accorda(all.filter(t=>t.tipo==="Uscita").length, "voce", "voci"));
   $("mNet").textContent=money(net);
   $("mNet").className="v "+(net>=0?"pos":"neg");
   $("mRate").textContent = inc>0 ? trDin("risparmiato "+pct(net/inc*100)) : trDin("nessuna entrata registrata");
@@ -3587,8 +3596,10 @@ function saldiPerValuta(p, allaData){
     if(daRett && t.data <= daRett) return;   /* già compreso nella correzione */
     var v = valutaDi(t), imp = importoOriginale(t);
     if(t.tipo === "Giroconto"){
-      if(t.portafoglio === p){ out[v] = (out[v]||0) - imp; }
-      if(t.portafoglioDest === p){ out[v] = (out[v]||0) + imp; }
+      var fra = portafogliDelGiroconto(t);
+      if(!fra) return;                     /* giroconto solo tra fondi */
+      if(fra.da === p){ out[v] = (out[v]||0) - imp; }
+      if(fra.a === p){ out[v] = (out[v]||0) + imp; }
       return;
     }
     if(t.portafoglio !== p) return;
@@ -3617,13 +3628,29 @@ function rettifichePortafoglio(p){
 }
 
 /* effetto di un singolo movimento su un dato portafoglio */
+/* Fra quali portafogli si muove un giroconto. Li sposta solo se li
+   indica tutti e due, e diversi: con uno solo, o con lo stesso due
+   volte, i soldi restano dove sono e cambia solo il fondo. E' la forma
+   che salva il modulo quando «Al portafoglio» resta vuoto o uguale, e
+   quella dei versamenti del piano e dei dati di esempio.
+   Tutti i saldi dei portafogli passano da qui. Fino alla 1.5.2 la regola
+   era scritta tre volte, e due copie contavano l'importo come uscito dal
+   portafoglio di partenza: menu, Riepilogo e quadratura dicevano un
+   liquido piu' basso di quello della pagina Portafogli. */
+function portafogliDelGiroconto(t){
+  if(!t || t.tipo!=="Giroconto") return null;
+  var da=t.portafoglio||"", a=t.portafoglioDest||"";
+  if(!da || !a || da===a) return null;
+  return {da:da, a:a};
+}
+
 function effettoSuPortafoglio(t,p){
   var imp=Number(t.importo)||0;
   if(t.tipo==="Giroconto"){
-    var da=t.portafoglio||"", a=t.portafoglioDest||"";
-    if(da===a) return 0;
-    if(da===p) return -imp;
-    if(a===p) return imp;
+    var fra=portafogliDelGiroconto(t);
+    if(!fra) return 0;
+    if(fra.da===p) return -imp;
+    if(fra.a===p) return imp;
     return 0;
   }
   if(t.portafoglio!==p) return 0;
@@ -3813,8 +3840,9 @@ function portafoglioBalances(){
   tx().forEach(function(t){
     var imp=Number(t.importo)||0;
     if(t.tipo==="Giroconto"){
-      var da=t.portafoglio, a=t.portafoglioDest;
-      if(!da || !a || da===a) return;      /* giroconto solo tra fondi */
+      var fra=portafogliDelGiroconto(t);
+      if(!fra) return;                     /* giroconto solo tra fondi */
+      var da=fra.da, a=fra.a;
       if(da in b && !(daDopo[da] && t.data<=daDopo[da])){
         b[da]-=imp; quanti[da]++; if(!ultimo[da]||t.data>ultimo[da]) ultimo[da]=t.data; }
       if(a in b && !(daDopo[a] && t.data<=daDopo[a])){
@@ -4379,11 +4407,15 @@ function disegnaTutorial(){
    Da aggiornare a ogni rilascio: il numero qui sotto e le righe che
    lo accompagnano. Se restano indietro il pannello non compare, e
    non succede niente di male. */
-var VERSIONE_APP = "1.5.2";
+var VERSIONE_APP = "1.5.3";
 
 var NOVITA = {
   titolo: "Cosa è cambiato",
   versioni: [
+    { v: "1.5.3", righe: [
+      "<b>Giroconti fra fondi.</b> Spostare soldi da un fondo all'altro non li toglie più dal conto: il totale dei Portafogli e quello dei Fondi tornano a coincidere, anche per i giroconti già registrati. Non serve correggere niente a mano.",
+      "<b>Titoli e numeri.</b> Aprendo i Fondi e le altre sezioni del menu, in alto compare il loro nome invece di «Impostazioni»; e con una sola voce nel mese i Movimenti scrivono «1 voce»."
+    ] },
     { v: "1.5.2", righe: [
       "<b>«Voci da completare» sul telefono.</b> Il riquadro ora è una scheda come gli altri elenchi dei Movimenti, e il pulsante «Completa» si vede subito, senza dover trascinare la tabella di lato.",
       "<b>Movimenti sul tablet in verticale.</b> Le voci diventano schede con due campi per riga, e Modifica ed Elimina restano sempre in vista invece di finire fuori dallo schermo."
@@ -4805,7 +4837,9 @@ function eliminaViaggio(id){
   var v=viaggioDa(id); if(!v) return;
   var quante=tx().filter(function(t){ return t.daViaggio===v.id; }).length;
   var messaggio = quante
-    ? trDin("Eliminare «"+(v.nome||"")+"» e le "+quante+" voci che ha creato nei Movimenti?")
+    ? trDin(quante===1
+        ? "Eliminare «"+(v.nome||"")+"» e la voce che ha creato nei Movimenti?"
+        : "Eliminare «"+(v.nome||"")+"» e le "+accorda(quante, "voce", "voci")+" che ha creato nei Movimenti?")
     : trDin("Eliminare «"+(v.nome||"")+"»?");
   if(!confirm(messaggio)) return;
   S.transactions = tx().filter(function(t){ return t.daViaggio!==v.id; });
@@ -4866,6 +4900,9 @@ function renderPatrimonio(){
    future non richiedono di ritoccare ogni singolo punto del codice.
    ═══════════════════════════════════════════════ */
 var TESTI_EN = {
+  "<b>Giroconti fra fondi.</b> Spostare soldi da un fondo all'altro non li toglie più dal conto: il totale dei Portafogli e quello dei Fondi tornano a coincidere, anche per i giroconti già registrati. Non serve correggere niente a mano.": "<b>Transfers between funds.</b> Moving money from one fund to another no longer takes it out of the account: the Wallets total and the Funds total agree again, including for transfers already recorded. There is nothing to fix by hand.",
+  "<b>Titoli e numeri.</b> Aprendo i Fondi e le altre sezioni del menu, in alto compare il loro nome invece di «Impostazioni»; e con una sola voce nel mese i Movimenti scrivono «1 voce».": "<b>Titles and counts.</b> When you open Funds and the other menu sections, their own name appears at the top instead of «Settings»; and with a single entry in the month Transactions says «1 entry».",
+  "un'altra voce non mostrata": "one more entry not shown",
   "<b>«Voci da completare» sul telefono.</b> Il riquadro ora è una scheda come gli altri elenchi dei Movimenti, e il pulsante «Completa» si vede subito, senza dover trascinare la tabella di lato.": "<b>«Entries to complete» on your phone.</b> The panel is now a card like the other lists in Transactions, and the «Complete» button is visible right away, without dragging the table sideways.",
   "<b>Movimenti sul tablet in verticale.</b> Le voci diventano schede con due campi per riga, e Modifica ed Elimina restano sempre in vista invece di finire fuori dallo schermo.": "<b>Transactions on a tablet held upright.</b> Entries become cards with two fields per row, and Edit and Delete always stay in view instead of ending up off screen.",
   "<b>Un avviso che non ci doveva essere.</b> Salvando un movimento senza descrizione compariva «voci importate senza classificazione», come se arrivasse da un estratto conto. Il Dettaglio è facoltativo quando lo scrivi: adesso lo resta anche dopo.": "<b>A warning that should not have been there.</b> Saving an entry without a description brought up «entries imported without a category», as if it had come from a bank statement. Details are optional when you type them in: now they stay optional afterwards too.",
@@ -5832,6 +5869,13 @@ var SCHEMI_EN = [
   [/^(\d+) movimenti aggiornati$/, "$1 entries updated"],
   [/^(\d+) voci$/, "$1 entries"],
   [/^(\d+) voce$/, "$1 entry"],
+  [/^(\d+) voce nuova$/, "$1 new entry"],
+  [/^(\d+) voce aggiunta$/, "$1 entry added"],
+  [/^(\d+) voci caricate dal backup$/, "$1 entries loaded from the backup"],
+  [/^(\d+) voce caricata dal backup$/, "$1 entry loaded from the backup"],
+  [/^(\d+) voci ripristinate da Drive$/, "$1 entries restored from Drive"],
+  [/^(\d+) voce ripristinata da Drive$/, "$1 entry restored from Drive"],
+  [/^Eliminare «(.+)» e la voce che ha creato nei Movimenti\?$/, "Delete «$1» and the entry it created in Transactions?"],
   [/^(\d+) voci aggiunte, (\d+) duplicat[ei] ignorat[ei]$/, "$1 entries added, $2 duplicates skipped"],
   [/^(\d+) voci aggiunte$/, "$1 entries added"],
   [/^(\d+) tassi aggiornati al (.+)$/, "$1 rates updated on $2"],
@@ -7883,7 +7927,12 @@ $("invSave").addEventListener("click",function(){
    Impostazioni
    ═══════════════════════════════════════════════ */
 function renderImpostazioni(){
-  $("viewTitle").textContent="Impostazioni";
+  /* La testata la scrive chi apre la vista o la sezione. Questa
+     funzione disegna anche il contenuto di Fondi, Regole, Elenchi, Anni,
+     Preferenze, Pro, Drive e Privacy: fino alla 1.5.2 scriveva
+     «Impostazioni» sopra tutte, al posto del titolo appena messo da
+     apriSezione(). */
+  if(view==="impostazioni") $("viewTitle").textContent="Impostazioni";
   var bal=bucketBalances();
   var body=$("setAlloc"); body.innerHTML="";
   var totObj=0;
@@ -9637,7 +9686,7 @@ function disegnaAnteprima(doppi, scartate, saldi){
   var riconosciuti=ecCandidati.filter(function(c){ return c.indovinato; }).length;
 
   $("ecRiepilogo").textContent =
-    trDin(n+" voci nuove") +
+    trDin(accorda(n, "voce nuova", "voci nuove")) +
     (doppi ? " · "+trDin(doppi+" già presenti") : "") +
     (scartate ? " · "+trDin(scartate+" righe ignorate") : "") +
     (saldi ? " · "+trDin(saldi+" righe di saldo escluse (non sono movimenti)") : "") +
@@ -9665,7 +9714,8 @@ function disegnaAnteprima(doppi, scartate, saldi){
   });
   tab.appendChild(tb);
   var w=el("div","tw tw-schede"); w.appendChild(tab); box.appendChild(w);
-  if(n>60) box.appendChild(el("p","hint", trDin("altre "+(n-60)+" voci non mostrate")));
+  if(n>60) box.appendChild(el("p","hint", trDin(n-60===1 ? "un'altra voce non mostrata"
+    : "altre "+accorda(n-60, "voce non mostrata", "voci non mostrate"))));
 }
 
 function importPayload(d){
@@ -9690,7 +9740,7 @@ function importPayload(d){
     S.config = Object.assign(defaults().config, d.config||{});
     normalizzaStato(S);
     save(); renderAll(); ritraduci();
-    toast(trDin(tx().length+" voci caricate dal backup"));
+    toast(trDin(accorda(tx().length, "voce caricata dal backup", "voci caricate dal backup")));
     return;
   }
 
@@ -9784,7 +9834,7 @@ function importPayload(d){
 
   normalizzaStato(S);
   save(); renderAll();
-  toast(added+" voci aggiunte · "+skipped+" duplicati ignorati"+
+  toast(accorda(added, "voce aggiunta", "voci aggiunte")+" · "+accorda(skipped, "duplicato ignorato", "duplicati ignorati")+
     (snapAdded?(" · "+snapAdded+" rilevazioni"):"")+
     (listeSostituite.length?(" · elenchi aggiornati"):""));
 }
@@ -10158,7 +10208,7 @@ if($("ecConferma")) $("ecConferma").addEventListener("click",function(){
   var n=ecCandidati.length;
   ecCandidati.forEach(function(c){ tx().push(c.t); });
   save(); chiudiEstrattoConto(); renderAll(); ritraduci();
-  toast(trDin(n+" voci aggiunte"));
+  toast(trDin(accorda(n, "voce aggiunta", "voci aggiunte")));
 });
 function avviaInterfaccia(){
   if(typeof avviaSentinellaLingua==="function") avviaSentinellaLingua();
@@ -10214,6 +10264,13 @@ setTimeout(function(){
   try{
     if(!tutorialGiaVisto() && tx().length===0){
       apriTutorial();
+      /* Anche chi installa adesso si segna la versione, subito. Le sue
+         novita' non le vede, ma al prossimo aggiornamento deve risultare
+         uno che aggiorna. Fino alla 1.5.2 la versione si segnava solo al
+         primo avvio senza presentazione: chi aggiornava senza aver mai
+         riaperto l'app sembrava un'installazione nuova, e il pannello
+         delle novita' non si apriva. */
+      segnaNovitaViste();
     } else {
       /* La presentazione si segna come vista anche a chi non l'ha
          ricevuta perche' aveva gia' dei movimenti: e' la stessa cosa di
