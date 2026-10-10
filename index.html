@@ -709,6 +709,13 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 }
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 .row-tools{display:flex;gap:6px;justify-content:flex-end}
+/* Fondi (1.6.2): fino a cinque pulsanti per riga. Dove la tabella e' a colonne si dispongono su due righe
+   invece di comprimersi, e Progresso e Mancante vanno a capo se serve: cosi' la riga resta nella scheda. */
+@media (min-width:861px) and (min-height:521px){
+  #allocBody td.azioni{min-width:240px}
+  #allocBody .row-tools{flex-wrap:wrap;max-width:225px;margin-left:auto}
+  #allocBody td[data-et="Progresso"],#allocBody td[data-et="Mancante"]{white-space:normal}
+}
 .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end}
 .filters .f-item{min-width:18ch}
 .cerca-anni{display:inline-flex;align-items:center;gap:6px;margin-top:6px;
@@ -920,7 +927,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
   table.mob-schede td.vuoto{display:none}
   table.mob-schede tfoot{display:block}
   table.mob-schede tfoot tr{background:var(--panel);border-color:var(--brass-dim)}
-  table.mob-schede .row-tools{justify-content:flex-end;width:100%}
+  table.mob-schede .row-tools{justify-content:flex-end;flex-wrap:wrap;width:100%}
   table.mob-schede td.azioni{padding-top:9px;margin-top:6px;border-top:1px solid var(--line-soft)}
   table.mob-schede td.azioni::before{content:""}
   table.mob-schede .originale{max-width:62vw;white-space:normal}
@@ -1305,73 +1312,74 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 
     <!-- ══ CONTENITORE DELLE SEZIONI (nascosto) ═══ -->
         <div id="deposito" style="display:none">
-      <div class="sezione" data-sez="portafogli"><div class="card">
-        <h2>Dove sono i soldi <span class="dim" style="text-transform:none;letter-spacing:0;font-family:var(--body)">— saldo di ogni portafoglio, aggiornato a oggi</span></h2>
-        <div class="tw tw-schede">
-          <table class="mob-schede">
-            <thead><tr>
-              <th>Portafoglio</th><th class="num">Saldo</th><th class="num">Quota</th>
-              <th>Ultima verifica</th><th style="width:150px"></th>
-            </tr></thead>
-            <tbody id="portBody"></tbody>
-            <tfoot id="portFoot"></tfoot>
-          </table>
+      <div class="sezione" data-sez="portafogli">
+        <button class="btn primary" id="btnNuovoPort" type="button" style="width:100%;margin:0 0 12px">+ Nuovo portafoglio</button>
+        <div class="card" id="portNuovoBox" style="display:none">
+          <h2>Nuovo portafoglio</h2>
+          <p class="hint" style="margin:0 0 12px">Dove tieni i soldi: un conto, la carta, i contanti. Servono solo queste informazioni; il resto lo fanno i movimenti.</p>
+          <div class="form-grid">
+            <label class="f full"><span>Nome</span><input type="text" autocomplete="on" autocapitalize="sentences" spellcheck="true" enterkeyhint="next" id="newPort" placeholder="Es. Satispay" maxlength="40"></label>
+            <label class="f"><span data-val="Saldo iniziale €">Saldo iniziale €</span><input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" id="newPortSaldo" placeholder="0" style="text-align:right"></label>
+            <label class="f"><span>Valuta</span><select id="newPortValuta"></select></label>
+            <div class="full" style="grid-column:1/-1"><label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer;font-family:var(--body)"><input type="checkbox" id="newPortMulti" style="width:auto;margin:0">più valute nello stesso portafoglio</label></div>
+          </div>
+          <p class="hint" style="margin:10px 0 12px">Il saldo iniziale è quanto c'era <b>prima</b> del primo movimento che registri.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn primary" id="btnAddPort" type="button">Aggiungi portafoglio</button>
+            <button class="btn ghost" id="btnAnnullaPort" type="button">Annulla</button>
+          </div>
         </div>
-        <p class="hint">Ogni portafoglio parte dal saldo iniziale che imposti qui sotto e si aggiorna da solo con i movimenti. Se dopo qualche mese il saldo non torna, premi <b>Correggi</b>: fissi la cifra reale e il conteggio riparte da lì, senza dover cercare l'errore.</p>
+        <div class="card">
+          <h2>Portafogli <span class="dim" style="text-transform:none;letter-spacing:0;font-family:var(--body)">— dove sono i soldi, aggiornato a oggi</span></h2>
+          <div class="tw tw-schede">
+            <table class="mob-schede">
+              <thead><tr>
+                <th>Portafoglio</th><th class="num">Saldo</th><th class="num">Quota</th>
+                <th>Ultima verifica</th><th style="width:300px"></th>
+              </tr></thead>
+              <tbody id="portBody"></tbody>
+              <tfoot id="portFoot"></tfoot>
+            </table>
+          </div>
+          <p class="hint">Ogni portafoglio parte dal suo saldo iniziale e si aggiorna da solo con i movimenti. Se dopo qualche mese il saldo non torna, premi <b>Correggi</b>: fissi la cifra reale e il conteggio riparte da lì, senza dover cercare l'errore. Lì cambi anche il saldo iniziale e la valuta.</p>
+        </div>
       </div>
-
-      <div class="card">
-        <h2>Portafogli</h2>
-        <p class="hint" style="margin:0 0 12px">Il saldo iniziale è quanto c'era nel portafoglio <b>prima</b> del primo movimento che hai registrato. Si imposta una volta sola: da lì in poi il saldo si aggiorna da solo.</p>
-        <div class="tw tw-schede">
-          <table class="mob-schede">
-            <thead><tr><th>Portafoglio</th><th class="num" style="width:150px">Saldo iniziale</th><th class="num" style="width:120px">Valuta</th><th class="num" style="width:130px">Saldo oggi</th><th style="width:190px"></th></tr></thead>
-            <tbody id="setPort"></tbody>
-            <tfoot id="setPortFoot"></tfoot>
-          </table>
+      <div class="sezione" data-sez="fondi">
+        <button class="btn primary" id="btnNuovoFondo" type="button" style="width:100%;margin:0 0 12px">+ Nuovo fondo</button>
+        <div class="card" id="fondoNuovoBox" style="display:none">
+          <h2>Nuovo fondo</h2>
+          <p class="hint" style="margin:0 0 12px">Un fondo è uno scopo a cui assegni una parte dei tuoi soldi: vacanze, imprevisti, una spesa grossa.</p>
+          <div class="form-grid">
+            <label class="f full"><span>Nome</span><input type="text" autocomplete="on" autocapitalize="sentences" spellcheck="true" enterkeyhint="next" id="newAlloc" placeholder="Es. Vacanze" maxlength="40"></label>
+            <label class="f"><span data-val="Saldo iniziale €">Saldo iniziale €</span><input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" id="newAllocSaldo" placeholder="0" style="text-align:right"></label>
+            <label class="f"><span data-val="Obiettivo €">Obiettivo €</span><input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" id="newAllocObiettivo" placeholder="0" style="text-align:right"></label>
+          </div>
+          <p class="hint" style="margin:10px 0 12px">Il saldo iniziale è quanto avevi già da parte <b>prima</b> di registrare i movimenti. L'obiettivo è facoltativo: lascia 0 se non hai un traguardo.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn primary" id="btnAddAlloc" type="button">Aggiungi fondo</button>
+            <button class="btn ghost" id="btnAnnullaAlloc" type="button">Annulla</button>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:12px;max-width:400px">
-          <input type="text" autocomplete="on" autocapitalize="sentences" spellcheck="true" enterkeyhint="done" id="newPort" placeholder="Nuovo portafoglio" maxlength="40">
-          <button class="btn" data-add="portafogli">Aggiungi</button>
+        <div class="card">
+          <h2>Fondi di allocazione <span class="dim" style="text-transform:none;letter-spacing:0;font-family:var(--body)">— tutti gli anni, saldi iniziali inclusi</span></h2>
+          <div class="ribbon">
+            <div class="ribbon-bar" id="ribbon"></div>
+            <div class="ribbon-scale" id="notches"></div>
+          </div>
+          <div class="tw tw-schede">
+            <table class="mob-schede">
+              <thead><tr>
+                <th>Fondo</th><th class="num">Saldo</th><th class="num">Quota</th>
+                <th class="num">Obiettivo</th><th class="num">Progresso</th><th class="num">Mancante</th>
+                <th style="width:250px"></th>
+              </tr></thead>
+              <tbody id="allocBody"></tbody>
+              <tfoot id="allocFoot"></tfoot>
+            </table>
+          </div>
+          <div class="quadratura" id="quadratura"></div>
+          <p class="hint">I fondi sono una suddivisione teorica del tuo denaro liquido: la loro somma è sempre pari a quanto hai. Una spesa <b>sottrae</b> dal fondo indicato (o da <b>Non allocato</b> se non ne scegli uno), un'entrata <b>aggiunge</b>, e un giroconto sposta denaro tra due fondi senza toccare il totale.<br>Raggiunto l'obiettivo puoi segnare un fondo come <b>completato</b>: resta in elenco, evidenziato. Quando ne hai speso il capitale per la finalità prevista, segnalo come <b>concluso</b> e scende in fondo, in secondo piano. Entrambi i passaggi sono reversibili.<br>Rinominando un fondo si aggiornano anche i movimenti e le regole che lo usano.</p>
         </div>
-      </div>
-      </div>
-      <div class="sezione" data-sez="fondi"><div class="card">
-        <h2>Allocazione dei risparmi <span class="dim" style="text-transform:none;letter-spacing:0;font-family:var(--body)">— tutti gli anni, saldi iniziali inclusi</span></h2>
-        <div class="ribbon">
-          <div class="ribbon-bar" id="ribbon"></div>
-          <div class="ribbon-scale" id="notches"></div>
-        </div>
-        <div class="tw tw-schede">
-          <table class="mob-schede">
-            <thead><tr>
-              <th>Fondo</th><th class="num">Saldo</th><th class="num">Quota</th>
-              <th class="num">Obiettivo</th><th class="num">Progresso</th><th class="num">Mancante</th>
-              <th style="width:230px"></th>
-            </tr></thead>
-            <tbody id="allocBody"></tbody>
-            <tfoot id="allocFoot"></tfoot>
-          </table>
-        </div>
-        <div class="quadratura" id="quadratura"></div>
-        <p class="hint">I fondi sono una suddivisione teorica del tuo denaro liquido: la loro somma è sempre pari a quanto hai. Una spesa <b>sottrae</b> dal fondo indicato (o da <b>Non allocato</b> se non ne scegli uno), un'entrata <b>aggiunge</b>, e un giroconto sposta denaro tra due fondi senza toccare il totale.<br>Raggiunto l'obiettivo puoi segnare un fondo come <b>completato</b>: resta in elenco, evidenziato. Quando ne hai speso il capitale per la finalità prevista, segnalo come <b>concluso</b> e scende in fondo, in secondo piano. Entrambi i passaggi sono reversibili.</p>
-      </div>
-
-      <div class="card">
-        <h2>Fondi di allocazione</h2>
-        <div class="tw tw-schede">
-          <table class="mob-schede">
-            <thead><tr><th>Fondo</th><th class="num" style="width:170px" data-val="Saldo iniziale €">Saldo iniziale €</th><th class="num" style="width:170px" data-val="Obiettivo €">Obiettivo €</th><th style="width:180px"></th></tr></thead>
-            <tbody id="setAlloc"></tbody>
-            <tfoot id="setAllocFoot"></tfoot>
-          </table>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:12px;max-width:400px">
-          <input type="text" autocomplete="on" autocapitalize="sentences" spellcheck="true" enterkeyhint="done" id="newAlloc" placeholder="Nuovo fondo (es. Vacanze)" maxlength="40">
-          <button class="btn" id="btnAddAlloc">Aggiungi fondo</button>
-        </div>
-        <p class="hint">Il saldo iniziale è quanto avevi già da parte in quel fondo prima di iniziare a registrare i movimenti. L'obiettivo è la cifra a cui vuoi arrivare; lascia zero se non hai un traguardo. Rinominando un fondo si aggiornano anche i movimenti e le regole che lo usano.</p>
-      </div>
       </div>
       <div class="sezione" data-sez="ricorrenti"><div class="card">
         <h2>Movimenti ricorrenti</h2>
@@ -1588,6 +1596,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
         <h3 style="margin:18px 0 8px">Come si torna in pari</h3>
         <p class="hint" style="margin:0 0 10px">Il numero minimo di pagamenti che chiude tutti i conti.</p>
         <div id="vgPareggi"></div>
+        <div id="vgSegnati"></div>
 
         <h3 style="margin:20px 0 8px">Movimenti del viaggio</h3>
         <div id="vgMovimenti"></div>
@@ -1708,6 +1717,23 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
   </div>
 </div>
 
+<!-- ── Elenco dei pareggi del viaggio (1.6.2) ── -->
+<div class="mask" id="plMask">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="plTitolo" style="max-width:480px">
+    <h3 id="plTitolo">Quali pareggi registrare</h3>
+    <p class="hint" style="margin-top:0">I pagamenti che chiudono i conti del viaggio. Spunta quelli da registrare.</p>
+    <div class="form-grid">
+      <label class="f full"><span>In quale data</span><input type="date" id="plData"></label>
+    </div>
+    <div id="plElenco"></div>
+    <p class="hint">I tuoi diventano Movimenti, uno alla volta, e prima di registrarli puoi correggerli. Quelli fra gli altri si segnano soltanto come già pagati: i tuoi Movimenti non cambiano.</p>
+    <div class="modal-foot">
+      <button class="btn ghost" id="plAnnulla">Annulla</button>
+      <button class="btn primary" id="plConferma">Avanti</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Modale data dei giroconti dell'allocazione automatica ── -->
 <div class="mask" id="gvMask">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="gvTitolo" style="max-width:480px">
@@ -1748,16 +1774,58 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
 <div class="mask" id="rettMask">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rettTitolo" style="max-width:480px">
     <h3 id="rettTitolo">Correggi il saldo</h3>
-    <div id="rettInfo"></div>
-    <div class="form-grid">
-      <label class="f"><span>Alla data</span><input type="date" id="rettData"></label>
-      <label class="f"><span data-val="Saldo reale €">Saldo reale €</span><input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" id="rettSaldo"></label>
-      <label class="f full"><span>Nota</span><input type="text" autocomplete="on" autocapitalize="sentences" spellcheck="true" enterkeyhint="done" id="rettNota" placeholder="facoltativa"></label>
+    <div class="seg" id="rettModi" style="margin:0 0 14px">
+      <button type="button" class="on" data-modo="oggi" aria-pressed="true">Saldo di oggi</button>
+      <button type="button" data-modo="iniziale" aria-pressed="false">Saldo iniziale</button>
+      <button type="button" data-modo="valuta" aria-pressed="false">Valuta</button>
     </div>
-    <div id="rettScarto"></div>
+    <div id="rettInfo"></div>
+    <div id="rettPOggi">
+      <div class="form-grid">
+        <label class="f"><span>Alla data</span><input type="date" id="rettData"></label>
+        <label class="f"><span data-val="Saldo reale €">Saldo reale €</span><input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" id="rettSaldo"></label>
+        <label class="f full"><span>Nota</span><input type="text" autocomplete="on" autocapitalize="sentences" spellcheck="true" enterkeyhint="done" id="rettNota" placeholder="facoltativa"></label>
+      </div>
+      <div id="rettScarto"></div>
+    </div>
+    <div id="rettPIniziale" style="display:none">
+      <div class="form-grid">
+        <label class="f full"><span data-val="Saldo iniziale €">Saldo iniziale €</span><input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" id="rettIniz" style="text-align:right"></label>
+      </div>
+      <div id="rettInizAnteprima"></div>
+      <div id="rettInizScelta" style="display:none;margin-top:12px">
+        <p class="hint" style="margin:0 0 8px">Questo portafoglio ha già delle correzioni. Cosa preferisci?</p>
+        <label style="display:flex;gap:8px;align-items:flex-start;margin:0 0 10px;cursor:pointer;font-family:var(--body)"><input type="radio" name="rettInizModo" value="tieni" checked style="width:auto;margin:3px 0 0"><span><b>Tieni il saldo corretto</b><br><span class="dim" id="rettInizTieni" style="font-size:13px"></span></span></label>
+        <label style="display:flex;gap:8px;align-items:flex-start;margin:0;cursor:pointer;font-family:var(--body)"><input type="radio" name="rettInizModo" value="ricalcola" style="width:auto;margin:3px 0 0"><span><b>Ricalcola dal nuovo saldo iniziale</b><br><span class="dim" id="rettInizRicalcola" style="font-size:13px"></span></span></label>
+      </div>
+    </div>
+    <div id="rettPValuta" style="display:none">
+      <div class="form-grid">
+        <label class="f full"><span>Valuta</span><select id="rettValuta"></select></label>
+        <div class="full" style="grid-column:1/-1"><label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer;font-family:var(--body)"><input type="checkbox" id="rettMulti" style="width:auto;margin:0">più valute nello stesso portafoglio</label></div>
+      </div>
+    </div>
+    <div id="rettStoricoBox" style="display:none;margin-top:12px"><button type="button" class="btn sm ghost" id="rettStorico">Storico delle correzioni</button></div>
     <div class="modal-foot">
       <button class="btn ghost" id="rettAnnulla">Annulla</button>
       <button class="btn primary" id="rettSalva">Fissa questo saldo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modale modifica fondo ── -->
+<div class="mask" id="fdMask">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fdTitolo" style="max-width:480px">
+    <h3 id="fdTitolo">Modifica fondo</h3>
+    <p class="hint" style="margin:0 0 14px">Il saldo iniziale è quanto c'era nel fondo <b>prima</b> del primo movimento. L'obiettivo è la cifra a cui vuoi arrivare; lascia 0 se non ce l'hai.</p>
+    <p class="hint" id="fdBase" style="display:none;margin:0 0 14px">Qui finisce ciò che non ha un fondo: non si rinomina e non si elimina</p>
+    <div class="form-grid">
+      <label class="f full"><span data-val="Saldo iniziale €">Saldo iniziale €</span><input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" id="fdIniz" style="text-align:right"></label>
+      <label class="f full"><span data-val="Obiettivo €">Obiettivo €</span><input type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" id="fdObiettivo" style="text-align:right"></label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="fdAnnulla">Annulla</button>
+      <button class="btn primary" id="fdSalva">Salva</button>
     </div>
   </div>
 </div>
@@ -2754,7 +2822,7 @@ function renderAll(){
   /* «＋ Aggiungi» dove si registra: nel Riepilogo e nei Movimenti */
   $("btnNew").style.display = (view==="riepilogo" || view==="movimenti") ? "" : "none";
   if(view==="sezione"){
-    if(sezioneAperta==="portafogli"){ renderPortafogli(); renderSetPortafogli(); }
+    if(sezioneAperta==="portafogli"){ renderPortafogli(); }
     if(sezioneAperta==="fondi"){ renderRibbon(); renderImpostazioni(); }
     if(sezioneAperta==="valute"){ renderValute(); }
     if(sezioneAperta==="ricorrenti"){ renderRicorrenti(); }
@@ -4860,7 +4928,7 @@ function statoFondo(k){
 function impostaStato(k, stato){
   if(stato) S.config.statoFondi[k]=stato;
   else delete S.config.statoFondi[k];
-  save(); renderRiepilogo();
+  save(); ridisegnaQui();
   toast(stato==="completato" ? "«"+k+"» segnato come completato"
       : stato==="concluso" ? "«"+k+"» archiviato: ha svolto il suo scopo"
       : "«"+k+"» di nuovo attivo");
@@ -4878,10 +4946,10 @@ function fondiOrdinati(){
    ═══════════════════════════════════════════════ */
 var GUIDE = [
   { d:"Da dove comincio, se l'app è vuota",
-    r:"<p>Prima i <b>portafogli</b>: apri il menu ☰ → Portafogli e scrivi il saldo "+
-      "iniziale di ciascuno, cioè quanto c'era prima di iniziare a registrare.</p>"+
+    r:"<p>Prima i <b>portafogli</b>: apri il menu ☰ → Portafogli e imposta il saldo "+
+      "iniziale di ciascuno (da <b>Correggi</b> → «Saldo iniziale»), cioè quanto c'era prima di iniziare a registrare.</p>"+
       "<p>Poi i <b>fondi</b>: se hai già dei risparmi destinati a qualcosa, mettili "+
-      "come saldo iniziale del fondo giusto. La somma dei fondi dovrebbe combaciare "+
+      "come saldo iniziale del fondo giusto (da <b>Modifica</b>). La somma dei fondi dovrebbe combaciare "+
       "con la somma dei portafogli — il riquadro <b>Patrimonio</b> nel Riepilogo te lo dice.</p>"+
       "<p>Da lì in poi registri solo i movimenti nuovi.</p>" },
   { d:"Portafogli e fondi: quale uso quando",
@@ -5048,11 +5116,18 @@ var FAQ = [
    Da aggiornare a ogni rilascio: il numero qui sotto e le righe che
    lo accompagnano. Se restano indietro il pannello non compare, e
    non succede niente di male. */
-var VERSIONE_APP = "1.6.1";
+var VERSIONE_APP = "1.6.2";
 
 var NOVITA = {
   titolo: "Cosa è cambiato",
   versioni: [
+    { v: "1.6.2", righe: [
+      "<b>Portafogli e Fondi in una scheda sola:</b> crei, correggi, rinomini ed elimini da un'unica schermata, senza più dati ripetuti. Il saldo iniziale e la valuta di un portafoglio si cambiano da Correggi.",
+      "<b>Viaggi, pareggi:</b> l'elenco con le spunte comprende anche i pagamenti fra gli altri partecipanti, che puoi segnare come già pagati.",
+      "<b>Guida iniziale:</b> spiega anche il backup su Google Drive.",
+      "<b>Inglese rivisto:</b> nome del mese, «Category» e voci rimaste in italiano.",
+      "<b>Altre correzioni minori.</b>"
+    ] },
     { v: "1.6.1", righe: [
       "<b>Movimenti ricorrenti:</b> affitto, stipendio e abbonamenti si registrano con un tocco quando arriva il giorno; li crei anche da un movimento già registrato.",
       "<b>Ricerca su tutti gli anni:</b> trovi un movimento in qualsiasi anno, e «＋ Aggiungi» è sempre in alto.",
@@ -5285,32 +5360,36 @@ var VISITA_APP = [
           "sceglierla adesso, prima di registrare. La lingua si cambia in Preferenze." },
   { cap:CAP_ORDINE, voce:"portafogli",
     prima:function(){ visitaSezione("portafogli"); },
-    dove:function(){ var i=$("setPort") && $("setPort").querySelector("tr input[inputmode=decimal]"); return i ? (i.closest("td")||i) : null; },
+    dove:function(){ return $("portBody") && $("portBody").querySelector('button[data-az="correggi"]'); },
     titolo:"2 · Il saldo iniziale",
     testo:"Un <b>portafoglio</b> è ogni posto dove tieni dei soldi: conto, carta, contanti, PayPal. "+
-          "Per ognuno scrivi il <b>saldo iniziale</b>: quanto c'era prima del primo movimento che "+
-          "registri. Lo fai una volta sola, poi il saldo si aggiorna da solo." },
+          "Per ognuno serve il <b>saldo iniziale</b>: quanto c'era prima del primo movimento che "+
+          "registri. Lo imposti una volta sola da <b>Correggi</b> → «Saldo iniziale», poi il saldo "+
+          "si aggiorna da solo." },
   { cap:CAP_ORDINE, voce:"portafogli",
     prima:function(){ visitaSezione("portafogli"); },
-    dove:function(){ return $("setPort") && $("setPort").querySelector("tr .row-tools"); },
+    dove:function(){ return $("portBody") && $("portBody").querySelector("tr .row-tools"); },
     titolo:"2 · Rinomina, archivia, elimina",
     testo:"I portafogli proposti sono solo un esempio. <b>Rinomina</b> cambia il nome ovunque, "+
           "anche nei movimenti già registrati; <b>Elimina</b> toglie un portafoglio che non usi; "+
           "<b>Archivia</b> lo nasconde dai menu ma ne tiene lo storico." },
   { cap:CAP_ORDINE, voce:"portafogli",
     prima:function(){ visitaSezione("portafogli"); },
-    dove:function(){ return $("newPort") && $("newPort").parentNode; },
+    dove:function(){ return portNuovoVisibile() ? $("portNuovoBox") : $("btnNuovoPort"); },
     titolo:"2 · Aggiungine uno",
-    testo:"Scrivi il nome, per esempio «Satispay» o «Conto deposito», e premi <b>Aggiungi</b>: da "+
-          "quel momento lo trovi nel modulo di ogni movimento." },
+    testo:"Il modulo <b>Nuovo portafoglio</b> è dove lo crei: nome, saldo iniziale e valuta, per "+
+          "esempio «Satispay» o «Conto deposito». Se è chiuso lo apri con <b>+ Nuovo portafoglio</b>. "+
+          "Da quel momento lo trovi nel modulo di ogni movimento." },
   { cap:CAP_ORDINE, voce:"fondi",
     prima:function(){ visitaSezione("fondi"); },
-    dove:function(){ return $("setAlloc") && $("setAlloc").querySelector("tr"); },
+    dove:function(){ return $("allocBody") && $("allocBody").querySelector('button[data-az="modifica"]'); },
     titolo:"3 · I fondi",
     testo:"I portafogli dicono <b>dove</b> sono i soldi, i fondi <b>a cosa servono</b>; quelli "+
-          "proposti sono un esempio, li cambi come vuoi. Scrivi il saldo iniziale di ognuno: la "+
-          "somma dei fondi deve essere uguale a quella dei portafogli, e ciò che non assegni resta "+
-          "in «Non allocato». Il Patrimonio, nel Riepilogo, ti dice se tornano." },
+          "proposti sono un esempio, li cambi come vuoi, o ne crei di nuovi dal modulo <b>Nuovo fondo</b> "+
+          "(se è chiuso, lo apri con <b>+ Nuovo fondo</b>). "+
+          "Da <b>Modifica</b> scrivi il saldo iniziale di ognuno: la somma dei fondi deve essere "+
+          "uguale a quella dei portafogli, e ciò che non assegni resta in «Non allocato». Il "+
+          "Patrimonio, nel Riepilogo, ti dice se tornano." },
   { cap:CAP_ORDINE, voce:"elenchi",
     prima:function(){ visitaSezione("elenchi"); },
     dove:function(){ return $("elencoSchede"); },
@@ -6320,6 +6399,12 @@ function renderPatrimonio(){
    future non richiedono di ritoccare ogni singolo punto del codice.
    ═══════════════════════════════════════════════ */
 var TESTI_EN = {
+  "Eliminarlo comunque?": "Delete it anyway?",
+  "Eliminandolo si perdono anche il saldo iniziale e le correzioni di saldo.": "Deleting it also discards its starting balance and balance adjustments.",
+  "<b>Portafogli e Fondi in una scheda sola:</b> crei, correggi, rinomini ed elimini da un'unica schermata, senza più dati ripetuti. Il saldo iniziale e la valuta di un portafoglio si cambiano da Correggi.": "<b>Wallets and Funds on a single card:</b> create, adjust, rename and delete from one screen, with no more repeated data. A wallet's starting balance and currency are changed from Adjust.",
+  "<b>Viaggi, pareggi:</b> l'elenco con le spunte comprende anche i pagamenti fra gli altri partecipanti, che puoi segnare come già pagati.": "<b>Travel, settlements:</b> the checklist now includes payments between the other participants, which you can mark as already paid.",
+  "<b>Guida iniziale:</b> spiega anche il backup su Google Drive.": "<b>Getting-started guide:</b> it now also explains the Google Drive backup.",
+  "<b>Inglese rivisto:</b> nome del mese, «Category» e voci rimaste in italiano.": "<b>English reviewed:</b> the month name, «Category» and entries that were still in Italian.",
   "<b>Movimenti ricorrenti:</b> affitto, stipendio e abbonamenti si registrano con un tocco quando arriva il giorno; li crei anche da un movimento già registrato.": "<b>Recurring entries:</b> rent, salary and subscriptions are recorded with one tap when the day comes; you can also create them from an entry you've already recorded.",
   "<b>Ricerca su tutti gli anni:</b> trovi un movimento in qualsiasi anno, e «＋ Aggiungi» è sempre in alto.": "<b>Search across all years:</b> find an entry in any year, and «＋ Add» is always at the top.",
   "<b>Personalizzazione delle schermate:</b> scegli quali schermate tenere nella barra in basso.": "<b>Customizable screens:</b> choose which screens to keep in the bottom bar.",
@@ -6337,7 +6422,7 @@ var TESTI_EN = {
   "Il saldo iniziale": "The starting balance",
   "Rinomina, archivia, elimina": "Rename, archive, delete",
   "Aggiungine uno": "Add one",
-  "Scrivi il nome, per esempio «Satispay» o «Conto deposito», e premi <b>Aggiungi</b>: da quel momento lo trovi nel modulo di ogni movimento.": "Type the name, for example «Satispay» or «Savings account», and tap <b>Add</b>: from then on you'll find it in the form of every entry.",
+  "Il modulo <b>Nuovo portafoglio</b> è dove lo crei: nome, saldo iniziale e valuta, per esempio «Satispay» o «Conto deposito». Se è chiuso lo apri con <b>+ Nuovo portafoglio</b>. Da quel momento lo trovi nel modulo di ogni movimento.": "The <b>New wallet</b> form is where you create it: name, starting balance and currency, for example «Satispay» or «Savings account». If it's closed, open it with <b>+ New wallet</b>. From then on you'll find it in the form of every entry.",
   "Nuovo conto d'investimento": "New investment account",
   "Nome, es. «ETF mondo»": "Name, e.g. «World ETF»",
   "Tipo di conto": "Account type",
@@ -6355,29 +6440,29 @@ var TESTI_EN = {
   "<b>Movimenti sul tablet in verticale.</b> Le voci diventano schede con due campi per riga, e Modifica ed Elimina restano sempre in vista invece di finire fuori dallo schermo.": "<b>Transactions on a tablet held upright.</b> Entries become cards with two fields per row, and Edit and Delete always stay in view instead of ending up off screen.",
   "<b>Un avviso che non ci doveva essere.</b> Salvando un movimento senza descrizione compariva «voci importate senza classificazione», come se arrivasse da un estratto conto. Il Dettaglio è facoltativo quando lo scrivi: adesso lo resta anche dopo.": "<b>A warning that should not have been there.</b> Saving an entry without a description brought up «entries imported without a category», as if it had come from a bank statement. Details are optional when you type them in: now they stay optional afterwards too.",
   "Senza argomento una voce non entra nei totali del Riepilogo. Se arriva da un estratto conto, il testo grigio è la descrizione della banca.": "Without a category an entry does not appear in the Summary totals. If it came from a bank statement, the grey text is the bank's description.",
-  "<b>Tetti di spesa.</b> Puoi dare a ogni argomento delle uscite un limite mensile, dal menu in Elenchi → Argomenti uscite. L'app tiene il conto da sola e ti dice quanto ti resta, o di quanto hai sforato.": "<b>Spending caps.</b> You can give every expense topic a monthly limit, from the menu under Lists → Expense topics. The app keeps count on its own and tells you what is left, or how far over you went.",
-  "<b>«Questo mese», in cima al Riepilogo.</b> Per ogni argomento: quanto hai speso finora, quanto resta del tetto e la tua media degli ultimi dodici mesi. È la parte che si guarda tutti i giorni, quindi sta in alto.": "<b>«This month», at the top of the Summary.</b> For each topic: how much you have spent so far, what is left of the cap and your average over the last twelve months. It is the part you look at every day, so it goes at the top.",
+  "<b>Tetti di spesa.</b> Puoi dare a ogni argomento delle uscite un limite mensile, dal menu in Elenchi → Argomenti uscite. L'app tiene il conto da sola e ti dice quanto ti resta, o di quanto hai sforato.": "<b>Spending caps.</b> You can give every expense category a monthly limit, from the menu under Lists → Expense categories. The app keeps count on its own and tells you what is left, or how far over you went.",
+  "<b>«Questo mese», in cima al Riepilogo.</b> Per ogni argomento: quanto hai speso finora, quanto resta del tetto e la tua media degli ultimi dodici mesi. È la parte che si guarda tutti i giorni, quindi sta in alto.": "<b>«This month», at the top of the Summary.</b> For each category: how much you have spent so far, what is left of the cap and your average over the last twelve months. It is the part you look at every day, so it goes at the top.",
   "<b>Il Riepilogo è più corto.</b> Saldo cumulato, uscite per necessità, confronto con l'anno prima e dettaglio per mese sono raccolti in «Approfondimenti dell'anno», in fondo: si aprono con un tocco quando servono, e nel frattempo non ti fanno scorrere quattro schermate.": "<b>The Summary is shorter.</b> Cumulative balance, expenses by necessity, comparison with last year and the month-by-month breakdown are gathered under «Insights for the year», at the bottom: they open with one tap when you need them, and meanwhile they do not make you scroll past four screens.",
   "<b>Icona aggiornata.</b> Ora usa anche il rosso corallo delle uscite, oltre al verde delle entrate — gli stessi colori che vedi in ogni movimento.": "<b>Updated icon.</b> It now also uses the coral red of expenses, alongside the green of income — the same colours you see on every entry.",
   "Tetti di spesa": "Spending caps",
-  "Quanto vuoi spendere al massimo in un mese, per ogni argomento. Lascia vuoto quello che non vuoi limitare: il tetto è un promemoria, non un blocco.": "The most you want to spend in a month, for each topic. Leave blank whatever you do not want to limit: the cap is a reminder, not a block.",
+  "Quanto vuoi spendere al massimo in un mese, per ogni argomento. Lascia vuoto quello che non vuoi limitare: il tetto è un promemoria, non un blocco.": "The most you want to spend in a month, for each category. Leave blank whatever you do not want to limit: the cap is a reminder, not a block.",
   "Questo mese": "This month",
   "Totale del mese": "Month total",
   "Approfondimenti dell'anno": "Insights for the year",
   "media": "average",
-  "altri argomenti": "other topics",
+  "altri argomenti": "other categories",
   "Nessuna uscita registrata questo mese": "No expenses recorded this month",
-  "Nessun tetto impostato: dal menu, in Elenchi \u2192 Argomenti uscite, puoi darne uno agli argomenti che vuoi tenere d'occhio.": "No cap set: from the menu, under Lists \u2192 Expense topics, you can set one for the topics you want to keep an eye on.",
+  "Nessun tetto impostato: dal menu, in Elenchi \u2192 Argomenti uscite, puoi darne uno agli argomenti che vuoi tenere d'occhio.": "No cap set: from the menu, under Lists \u2192 Expense categories, you can set one for the categories you want to keep an eye on.",
   "\u2014 grafici e tabelle che si consultano di rado": "\u2014 charts and tables you rarely need",
   "nessun tetto": "no cap",
   "oltre di": "over by",
   "restano": "left",
   "speso": "spent",
   "speso questo mese": "spent this month",
-  "I tetti si impostano dal menu, in Elenchi → Argomenti uscite.": "Caps are set from the menu, under Lists → Expense topics.",
+  "I tetti si impostano dal menu, in Elenchi → Argomenti uscite.": "Caps are set from the menu, under Lists → Expense categories.",
   "Con questa spesa superi il tetto del mese:": "This expense takes you over the cap for the month:",
   "La registro comunque?": "Record it anyway?",
-  "<b>Ricerca e filtri completi.</b> Cercando o filtrando per argomento ora escono anche i movimenti suddivisi: se uno scontrino conta in parte come Casa e in parte come Trasporti, lo trovi da entrambi.": "<b>Search and filters now complete.</b> Searching or filtering by topic now also returns split entries: if a receipt counts partly as House and partly as Transport, you will find it under both.",
+  "<b>Ricerca e filtri completi.</b> Cercando o filtrando per argomento ora escono anche i movimenti suddivisi: se uno scontrino conta in parte come Casa e in parte come Trasporti, lo trovi da entrambi.": "<b>Search and filters now complete.</b> Searching or filtering by category now also returns split entries: if a receipt counts partly as House and partly as Transport, you will find it under both.",
   "<b>Qualche pulsante più leggibile.</b> Su alcuni telefoni il campo di ricerca nei Movimenti si schiacciava fino a sparire: ora i campi si adattano alla dimensione del testo del telefono.": "<b>A few more readable buttons.</b> On some phones the search field in Transactions was squeezed until it disappeared: the fields now adapt to the phone's text size.",
   "<b>Avviso di aggiornamento.</b> Quando c'è una versione più recente, in alto compare un pulsante «Aggiorna» — non serve più tornare sul Play Store a mano.": "<b>Update notice.</b> When a newer version is available, an «Update» button appears at the top — no need to go back to the Play Store by hand.",
   "Aggiorna": "Update",
@@ -6387,25 +6472,25 @@ var TESTI_EN = {
   "Aggiornamento non riuscito: riprova più tardi": "Update failed: try again later",
   "<b>Qualche riordino.</b> In «Dati e backup» non compare più un riquadro dei Viaggi che non c'entrava, e dal menu è sparita una voce di servizio che serviva solo durante lo sviluppo.": "<b>Some tidying up.</b> «Data and backup» no longer shows a Trips box that did not belong there, and a service entry that was only needed during development has gone from the menu.",
   "Cosa è cambiato": "What has changed",
-  "<b>Un pagamento, più argomenti.</b> Nel modulo di una voce trovi «Suddividi in più argomenti»: uno scontrino da 60 € può contare 50 € come Casa e 10 € come Trasporti, restando una voce sola.": "<b>One payment, several topics.</b> In an entry's form you will find «Split across topics»: a €60 receipt can count €50 as House and €10 as Transport, while staying a single entry.",
+  "<b>Un pagamento, più argomenti.</b> Nel modulo di una voce trovi «Suddividi in più argomenti»: uno scontrino da 60 € può contare 50 € come Casa e 10 € come Trasporti, restando una voce sola.": "<b>One payment, several categories.</b> In an entry's form you will find «Split across categories»: a €60 receipt can count €50 as House and €10 as Transport, while staying a single entry.",
   "<b>Estratti conto più leggibili.</b> L'importazione ora prende il nome del negozio invece della dicitura della banca, e non registra più le righe di saldo iniziale e finale.": "<b>More readable bank statements.</b> The import now picks up the shop's name instead of the bank's wording, and no longer records the opening and closing balance rows.",
   "<b>Viaggi più comodi.</b> Elimina è passato accanto ad Apri e Modifica, e la freccia in alto torna all'elenco invece di riportarti al Riepilogo.": "<b>Handier trips.</b> Delete has moved next to Open and Edit, and the arrow at the top goes back to the list instead of taking you to the Summary.",
-  "Suddividi in più argomenti": "Split across topics",
-  "Un solo pagamento, più argomenti. Le righe devono sommare al totale.": "A single payment, several topics. The rows must add up to the total.",
+  "Suddividi in più argomenti": "Split across categories",
+  "Un solo pagamento, più argomenti. Le righe devono sommare al totale.": "A single payment, several categories. The rows must add up to the total.",
   "Aggiungi riga": "Add row",
-  "Torna a un argomento solo": "Back to a single topic",
+  "Torna a un argomento solo": "Back to a single category",
   "Togli la riga": "Remove the row",
   "Le righe tornano": "The rows add up",
   "mancano": "missing",
   "eccedono di": "over by",
-  "Servono almeno due righe con importo e argomento": "At least two rows with an amount and a topic are needed",
+  "Servono almeno due righe con importo e argomento": "At least two rows with an amount and a category are needed",
   "Le righe non sommano al totale del movimento": "The rows do not add up to the total of the entry",
   "Spendere in un'altra valuta": "Spending in another currency",
   "Viaggi di gruppo: chi deve cosa a chi": "Group trips: who owes what to whom",
   "Importare l'estratto conto della banca": "Importing your bank statement",
   "<p>In <b>Valute</b> aggiungi le monete che ti servono e scarica i cambi. Poi, nel modulo, accanto all'importo scegli la valuta.</p><p>Il cambio viene <b>congelato al momento del salvataggio</b>: una spesa di marzo non cambia valore a giugno.</p><p>Un portafoglio segnato come <b>multivaluta</b> — i contanti, di solito — tiene le monete separate invece di convertirle: 100 € e 30 $ restano due cifre.</p><p>Vale anche dentro un viaggio: puoi registrare una cena in dollari e l'app divide comunque i conti nella tua valuta.</p>": "<p>In <b>Currencies</b> add the ones you need and download the rates. Then, in the form, choose the currency next to the amount.</p><p>The rate is <b>frozen when you save</b>: a March expense does not change value in June.</p><p>A wallet marked as <b>multi-currency</b> — cash, usually — keeps the currencies apart instead of converting them: €100 and $30 stay two figures.</p><p>It works inside a trip too: you can record a dinner in dollars and the app still splits the accounts in your own currency.</p>",
   "<p>Apri il menu ☰ → <b>Viaggi di gruppo</b> e crea un viaggio con i nomi di chi parte. Segna quale sei tu: serve all'app per capire i conti dal tuo punto di vista.</p><p>Poi registri le spese man mano: <b>chi ha pagato</b> e <b>fra chi va divisa</b>. Non deve dividersi per forza fra tutti — il noleggio di un gommone può riguardare solo due persone.</p><p>Le spese del viaggio <b>non si mescolano</b> con quelle di tutti i giorni. L'unica che entra nei tuoi Movimenti è quella che hai pagato tu, e ci entra per <b>l'importo intero</b>: quei soldi sono usciti davvero dal tuo portafoglio. I rimborsi che ricevi dopo riportano il conto in pari.</p><p>Alla fine, <b>Come si torna in pari</b> calcola il numero minimo di pagamenti che chiude tutti i debiti — con quattro persone bastano tre rimborsi, non sei. Premendo il pulsante l'app ti chiede i dettagli di ogni rimborso, uno per volta, e li registra nei Movimenti.</p><p>Se qualcuno ti dà meno del dovuto, scrivi la cifra vera: la differenza resta come debito aperto invece di sparire.</p>": "<p>Open the menu ☰ → <b>Group trips</b> and create a trip with the names of everyone going. Mark which one is you: the app needs it to work out the accounts from your point of view.</p><p>Then you record expenses as you go: <b>who paid</b> and <b>who it is split between</b>. It does not have to be split between everyone — hiring a dinghy might involve only two people.</p><p>Trip expenses <b>do not mix</b> with everyday ones. The only one that enters your Transactions is the one you paid, and it enters for the <b>full amount</b>: that money really did leave your wallet. The reimbursements you receive later bring the account back into balance.</p><p>At the end, <b>How to settle up</b> works out the fewest payments that clear every debt — with four people three reimbursements are enough, not six. Pressing the button, the app asks you for the details of each reimbursement, one at a time, and records them in your Transactions.</p><p>If someone gives you less than they owe, write the real figure: the difference stays as an open debt instead of disappearing.</p>",
-  "<p class='avviso-sper' role='note'><b>Funzione ancora sperimentale.</b> Potrebbe interpretare in modo errato alcuni dati: controlla l'anteprima prima di aggiungere le voci.</p><p>Scarica dal sito della banca l'estratto in formato <b>CSV</b>, poi apri il menu ☰ → <b>Dati e backup</b> → <b>Importa estratto conto</b>.</p><p>L'app riconosce da sola le colonne di data, descrizione e importo, anche quando la banca le chiama in modi diversi. Ti mostra l'anteprima di quello che sta per inserire: se qualcosa non torna, annulli e non viene aggiunto niente.</p><p>Gli argomenti vengono proposti in base a <b>come hai classificato le spese simili in passato</b>: più usi l'app, più ci prende.</p><p>Due cose di cui non devi preoccuparti. Le righe di <b>saldo iniziale e finale</b> vengono escluse: non sono movimenti, sono la fotografia del conto in quel momento. E i <b>doppioni</b> vengono riconosciuti, quindi puoi reimportare lo stesso mese senza ritrovarti tutto due volte.</p>": "<p class='avviso-sper' role='note'><b>Feature still experimental.</b> It may interpret some data incorrectly: check the preview before adding the entries.</p><p>Download the statement from your bank's site in <b>CSV</b> format, then open the menu ☰ → <b>Data and backup</b> → <b>Import bank statement</b>.</p><p>The app works out the date, description and amount columns on its own, even when the bank names them differently. It shows you a preview of what it is about to add: if something looks wrong, cancel and nothing is added.</p><p>Topics are suggested based on <b>how you classified similar expenses in the past</b>: the more you use the app, the better it gets.</p><p>Two things you need not worry about. The <b>opening and closing balance</b> rows are left out: they are not transactions, they are a snapshot of the account at that moment. And <b>duplicates</b> are recognised, so you can re-import the same month without ending up with everything twice.</p>",
+  "<p class='avviso-sper' role='note'><b>Funzione ancora sperimentale.</b> Potrebbe interpretare in modo errato alcuni dati: controlla l'anteprima prima di aggiungere le voci.</p><p>Scarica dal sito della banca l'estratto in formato <b>CSV</b>, poi apri il menu ☰ → <b>Dati e backup</b> → <b>Importa estratto conto</b>.</p><p>L'app riconosce da sola le colonne di data, descrizione e importo, anche quando la banca le chiama in modi diversi. Ti mostra l'anteprima di quello che sta per inserire: se qualcosa non torna, annulli e non viene aggiunto niente.</p><p>Gli argomenti vengono proposti in base a <b>come hai classificato le spese simili in passato</b>: più usi l'app, più ci prende.</p><p>Due cose di cui non devi preoccuparti. Le righe di <b>saldo iniziale e finale</b> vengono escluse: non sono movimenti, sono la fotografia del conto in quel momento. E i <b>doppioni</b> vengono riconosciuti, quindi puoi reimportare lo stesso mese senza ritrovarti tutto due volte.</p>": "<p class='avviso-sper' role='note'><b>Feature still experimental.</b> It may interpret some data incorrectly: check the preview before adding the entries.</p><p>Download the statement from your bank's site in <b>CSV</b> format, then open the menu ☰ → <b>Data and backup</b> → <b>Import bank statement</b>.</p><p>The app works out the date, description and amount columns on its own, even when the bank names them differently. It shows you a preview of what it is about to add: if something looks wrong, cancel and nothing is added.</p><p>Categories are suggested based on <b>how you classified similar expenses in the past</b>: the more you use the app, the better it gets.</p><p>Two things you need not worry about. The <b>opening and closing balance</b> rows are left out: they are not transactions, they are a snapshot of the account at that moment. And <b>duplicates</b> are recognised, so you can re-import the same month without ending up with everything twice.</p>",
   "Come faccio a dividere le spese di una vacanza?": "How do I split the costs of a holiday?",
   "La «Spesa superflua» dei Movimenti mi risulta zero": "«Unnecessary expense» in Transactions shows zero",
   "Ho importato due volte lo stesso estratto conto": "I imported the same bank statement twice",
@@ -6415,8 +6500,8 @@ var TESTI_EN = {
   "<p>Non succede nulla: l'app riconosce i doppioni. Una voce con la stessa data, lo stesso importo, lo stesso dettaglio e lo stesso portafoglio non viene inserita una seconda volta, e te lo dice nel riepilogo prima di confermare.</p>": "<p>Nothing happens: the app recognises duplicates. An entry with the same date, the same amount, the same detail and the same wallet is not added a second time, and it tells you so in the summary before you confirm.</p>",
   "<p>Sì. Ovunque trovi <b>Esporta</b>, il formato è una delle cose che scegli: Excel, CSV o PDF. Vale anche per i movimenti che stai guardando con i filtri attivi, e per i movimenti e il resoconto di un viaggio.</p>": "<p>Yes. Wherever you find <b>Export</b>, the format is one of the things you choose: Excel, CSV or PDF. It applies to the transactions you are looking at with filters on, and to a trip's transactions and settlement report too.</p>",
   "— le etichette che usi nei movimenti": "\u2014 the labels you use on entries",
-  "Argomenti uscite": "Expense topics",
-  "Argomenti entrate": "Income topics",
+  "Argomenti uscite": "Expense categories",
+  "Argomenti entrate": "Income categories",
   "Ordinati dal più necessario al più rinunciabile: la posizione determina il colore dell'etichetta. Il primo della lista è quello proposto per le nuove uscite. La stella segna quali contano nella «Spesa superflua» dei Movimenti.": "Ordered from the most necessary to the most expendable: the position sets the label colour. The first one is proposed for new expenses. The star marks which ones count towards «Unnecessary expense» in Transactions.",
   "Fondi": "Funds",
   "— i dati escono da Contami": "\u2014 data leaves Contami",
@@ -6485,7 +6570,6 @@ var TESTI_EN = {
   "Alla data": "As of",
   "Allocazione": "Allocation",
   "Allocazione automatica dalle entrate": "Automatic allocation from income",
-  "Allocazione dei risparmi": "Savings allocation",
   "Andamento mensile": "Monthly trend",
   "Anni nel menu": "Years in the menu",
   "Anno": "Year",
@@ -6503,6 +6587,45 @@ var TESTI_EN = {
   "Contami": "Contami",
   "Correggi": "Adjust",
   "Correggi il saldo": "Adjust the balance",
+  /* 1.6.2 · i Portafogli in una scheda sola, Correggi con saldo iniziale e valuta */
+  "+ Nuovo portafoglio": "+ New wallet",
+  "Dove tieni i soldi: un conto, la carta, i contanti. Servono solo queste informazioni; il resto lo fanno i movimenti.": "Where you keep your money: an account, a card, cash. This is all we need; your entries do the rest.",
+  "più valute nello stesso portafoglio": "several currencies in the same wallet",
+  "Il saldo iniziale è quanto c'era <b>prima</b> del primo movimento che registri.": "The starting balance is what was there <b>before</b> the first entry you record.",
+  "Aggiungi portafoglio": "Add wallet",
+  "— dove sono i soldi, aggiornato a oggi": "— where the money is, up to date",
+  "Ogni portafoglio parte dal suo saldo iniziale e si aggiorna da solo con i movimenti. Se dopo qualche mese il saldo non torna, premi <b>Correggi</b>: fissi la cifra reale e il conteggio riparte da lì, senza dover cercare l'errore. Lì cambi anche il saldo iniziale e la valuta.": "Each wallet starts from its starting balance and keeps itself up to date with your entries. If after a few months the balance is off, press <b>Adjust</b>: you set the real figure and the count restarts from there, with no need to hunt for the mistake. That is also where you change the starting balance and the currency.",
+  "Correggi il saldo di oggi, il saldo iniziale o la valuta": "Adjust today's balance, the starting balance or the currency",
+  "Saldo di oggi": "Today's balance",
+  "Fissa il saldo iniziale": "Set the starting balance",
+  "Salva la valuta": "Save the currency",
+  "Storico delle correzioni": "Adjustment history",
+  "Questo portafoglio ha già delle correzioni. Cosa preferisci?": "This wallet already has adjustments. Which do you prefer?",
+  "Tieni il saldo corretto": "Keep the adjusted balance",
+  "Ricalcola dal nuovo saldo iniziale": "Recalculate from the new starting balance",
+  "Il saldo iniziale è quanto c'era <b>prima</b> del primo movimento registrato. Cambiandolo, il saldo di oggi si ricalcola.": "The starting balance is what was there <b>before</b> the first recorded entry. If you change it, today's balance is recalculated.",
+  "È la valuta che il portafoglio propone quando registri un movimento. Se tiene più valute, i saldi restano separati per valuta.": "This is the currency the wallet suggests when you record an entry. If it holds several currencies, the balances stay separate for each currency.",
+  "Questo è già il saldo iniziale.": "This is already the starting balance.",
+  "Scrivi il nome del portafoglio": "Type the wallet's name",
+  "Il saldo iniziale non è un numero": "The starting balance is not a number",
+  "Portafoglio aggiunto": "Wallet added",
+  "Inserisci il saldo iniziale": "Enter the starting balance",
+  "Il saldo iniziale è già questo": "That is already the starting balance",
+  "Il portafoglio tiene più valute: il saldo di oggi non si ricalcola da qui. Per cambiarlo usa «Saldo di oggi».": "This wallet holds several currencies: today's balance is not recalculated from here. To change it, use «Today's balance».",
+  "Es. Satispay": "E.g. Satispay",
+  "Aggiungine uno qui sopra per iniziare a seguirne il saldo.": "Add one above to start tracking its balance.",
+  /* 1.6.2 · i Fondi in una scheda sola, con «Modifica» */
+  "+ Nuovo fondo": "+ New fund",
+  "Nuovo fondo": "New fund",
+  "Un fondo è uno scopo a cui assegni una parte dei tuoi soldi: vacanze, imprevisti, una spesa grossa.": "A fund is a purpose you set part of your money aside for: holidays, emergencies, a big purchase.",
+  "Es. Vacanze": "E.g. Holidays",
+  "Il saldo iniziale è quanto avevi già da parte <b>prima</b> di registrare i movimenti. L'obiettivo è facoltativo: lascia 0 se non hai un traguardo.": "The starting balance is what you had already set aside <b>before</b> you began recording. The goal is optional: leave 0 if you have none.",
+  "Il saldo iniziale è quanto c'era nel fondo <b>prima</b> del primo movimento. L'obiettivo è la cifra a cui vuoi arrivare; lascia 0 se non ce l'hai.": "The starting balance is what was in the fund <b>before</b> the first entry. The goal is the figure you want to reach; leave 0 if you have none.",
+  "Cambia il saldo iniziale e l'obiettivo": "Change the starting balance and the goal",
+  "Rinominando un fondo si aggiornano anche i movimenti e le regole che lo usano.": "Renaming a fund also updates the entries and rules that use it.",
+  "Cambia il nome ovunque: movimenti e regole compresi": "Changes the name everywhere, entries and rules included",
+  "L'obiettivo non è un numero": "The goal is not a number",
+  "L'obiettivo non può essere negativo": "The goal cannot be negative",
   "Dal più recente al più vecchio": "Newest first",
   "Dal più vecchio al più recente": "Oldest first",
   "Data": "Date",
@@ -6526,8 +6649,6 @@ var TESTI_EN = {
   "Ho capito": "Got it",
   "I fondi sono una suddivisione teorica del tuo denaro liquido: la loro somma è sempre pari a quanto hai. Una spesa": "Funds are a notional split of your liquid money: their sum always equals what you have. An expense",
   "I tassi arrivano dalla Banca Centrale Europea tramite un servizio pubblico e gratuito. Lo scaricamento non invia nessun tuo dato: chiede solo l'elenco dei cambi del giorno. Puoi anche correggerli a mano, e senza rete restano validi gli ultimi scaricati.": "Rates come from the European Central Bank through a free public service. Downloading them sends none of your data: it only asks for the day's rate list. You can also correct them by hand, and without a connection the last downloaded ones stay valid.",
-  "Il saldo iniziale è quanto avevi già da parte in quel fondo prima di iniziare a registrare i movimenti. L'obiettivo è la cifra a cui vuoi arrivare; lascia zero se non hai un traguardo. Rinominando un fondo si aggiornano anche i movimenti e le regole che lo usano.": "The starting balance is what you had already set aside in that fund before you began recording. The goal is the figure you want to reach; leave zero if you have none. Renaming a fund also updates the transactions and rules that use it.",
-  "Il saldo iniziale è quanto c'era nel portafoglio": "The starting balance is what was in the wallet",
   "Importo": "Amount",
   "Importo €": "Amount €",
   "Impostazioni": "Settings",
@@ -6546,17 +6667,17 @@ var TESTI_EN = {
   "Necessità": "Necessity",
   "Necessità / Stabilità": "Necessity / Stability",
   "Non allocato": "Unallocated",
+  "\u2014 Non allocato": "\u2014 Unallocated",
+  "\u2014 nessuno": "\u2014 none",
   "Nota": "Note",
   "Numero di entrate / uscite": "Number of income / expense entries",
   "Nuova rilevazione": "New reading",
   "Nuova voce": "New entry",
   "Nuovo argomento di entrata": "New income category",
   "Nuovo argomento di spesa": "New expense category",
-  "Nuovo fondo (es. Vacanze)": "New fund (e.g. Holidays)",
   "Nuovo livello": "New level",
   "Nuovo portafoglio": "New wallet",
   "Obiettivo": "Goal",
-  "Ogni portafoglio parte dal saldo iniziale che imposti qui sotto e si aggiorna da solo con i movimenti. Se dopo qualche mese il saldo non torna, premi": "Each wallet starts from the opening balance you set below and keeps itself up to date. If after a few months the balance is off, press",
   "Ogni rilevazione è una fotografia del saldo a una certa data. Le variazioni sono sempre calcolate": "Each reading is a snapshot of the balance on a given date. Changes are always computed",
   "Ordinati dal più necessario al più rinunciabile: la posizione determina il colore dell'etichetta. Il primo della lista è quello proposto per le nuove uscite.": "Ordered from the most necessary to the most expendable: the position sets the label colour. The first one is suggested for new expenses.",
   "Ordinati dalla più prevedibile alla meno. Il primo della lista è quello proposto per le nuove entrate.": "Ordered from the most predictable to the least. The first one is suggested for new income.",
@@ -6614,7 +6735,6 @@ var TESTI_EN = {
   "completato": "reached",
   "concluso": "closed",
   "dal fondo indicato (o da": "from the chosen fund (or from",
-  "del primo movimento che hai registrato. Si imposta una volta sola: da lì in poi il saldo si aggiorna da solo.": "the first transaction you recorded. You set it once: from then on the balance keeps itself up to date.",
   "dettaglio, argomento, portafoglio…": "details, category, wallet…",
   "e scende in fondo, in secondo piano. Entrambi i passaggi sono reversibili.": "and it moves to the bottom, dimmed. Both steps can be undone.",
   "facoltativa": "optional",
@@ -6626,7 +6746,6 @@ var TESTI_EN = {
   "somma di tutti i versamenti registrati": "sum of all recorded deposits",
   "sottrae": "subtracts",
   "sul capitale": "on capital",
-  "— saldo di ogni portafoglio, aggiornato a oggi": "— balance of each wallet, up to date",
   "— tutti gli anni, saldi iniziali inclusi": "— all years, starting balances included",
   "— voci": "— entries",
   "← Menu": "← Menu",
@@ -6791,8 +6910,6 @@ var TESTI_EN = {
   "Previsto": "Planned",
   "Andamento": "Trend",
   "Attiva": "Active",
-  "Aggiungine uno qui sotto.": "Add one below.",
-  "Aggiungine uno qui sotto per iniziare a seguirne il saldo.": "Add one below to start tracking its balance.",
   "Le uscite registrate compariranno qui, ordinate per peso.": "Recorded expenses will appear here, ordered by weight.",
   "Gli altri anni sono riassunti qui sopra: clicca su un anno per aprirlo.": "The other years are summarised above: tap a year to open it.",
   "Il fondo è vuoto: nessun movimento verrà toccato.": "The fund is empty: no transaction will be touched.",
@@ -6957,7 +7074,7 @@ var TESTI_EN = {
   "Domande frequenti": "Frequently asked questions",
   "Aiuto": "Help",
   "Da dove comincio, se l'app è vuota": "Where do I start with an empty app",
-  "<p>Prima i <b>portafogli</b>: apri il menu ☰ → Portafogli e scrivi il saldo iniziale di ciascuno, cioè quanto c'era prima di iniziare a registrare.</p><p>Poi i <b>fondi</b>: se hai già dei risparmi destinati a qualcosa, mettili come saldo iniziale del fondo giusto. La somma dei fondi dovrebbe combaciare con la somma dei portafogli — il riquadro <b>Patrimonio</b> nel Riepilogo te lo dice.</p><p>Da lì in poi registri solo i movimenti nuovi.</p>": "<p>Wallets first: open the menu ☰ → Wallets and enter the starting balance of each one, that is what was there before you began recording.</p><p>Then the funds: if you already have savings earmarked for something, enter them as the starting balance of the right fund. The funds should add up to the wallets — the <b>Net worth</b> box in the Summary tells you.</p><p>From then on you only record new entries.</p>",
+  "<p>Prima i <b>portafogli</b>: apri il menu ☰ → Portafogli e imposta il saldo iniziale di ciascuno (da <b>Correggi</b> → «Saldo iniziale»), cioè quanto c'era prima di iniziare a registrare.</p><p>Poi i <b>fondi</b>: se hai già dei risparmi destinati a qualcosa, mettili come saldo iniziale del fondo giusto (da <b>Modifica</b>). La somma dei fondi dovrebbe combaciare con la somma dei portafogli — il riquadro <b>Patrimonio</b> nel Riepilogo te lo dice.</p><p>Da lì in poi registri solo i movimenti nuovi.</p>": "<p>Wallets first: open the menu ☰ → Wallets and set the starting balance of each one (from <b>Adjust</b> → «Starting balance»), that is what was there before you began recording.</p><p>Then the funds: if you already have savings earmarked for something, enter them as the starting balance of the right fund (from <b>Edit</b>). The funds should add up to the wallets — the <b>Net worth</b> box in the Summary tells you.</p><p>From then on you only record new entries.</p>",
   "Portafogli e fondi: quale uso quando": "Wallets and funds: which one when",
   "<p>Chiediti: <b>dove sta questo denaro</b>? Quello è il portafoglio. <b>A cosa serve</b>? Quello è il fondo.</p><p>Una spesa toglie da entrambi: esce dal portafoglio che hai usato e attinge dal fondo che hai indicato. Se non indichi un fondo, attinge da «Non allocato», che è il denaro senza una destinazione precisa.</p>": "<p>Ask yourself: <b>where is this money</b>? That is the wallet. <b>What is it for</b>? That is the fund.</p><p>An expense takes from both: it leaves the wallet you used and draws on the fund you chose. If you name no fund, it draws on «Unallocated», the money with no particular destination.</p>",
   "Tenere i conti allineati alla realtà": "Keeping the books true to life",
@@ -7049,6 +7166,15 @@ var TESTI_EN = {
   "Salva movimento": "Save entry",
   "Aggiungi movimento": "Add entry",
   "Registra i pareggi nei Movimenti": "Record the settlements in Entries",
+  "Quali pareggi registrare": "Which settlements to record",
+  "I pagamenti che chiudono i conti del viaggio. Spunta quelli da registrare.": "The payments that settle the trip's accounts. Tick the ones to record.",
+  "I tuoi diventano Movimenti, uno alla volta, e prima di registrarli puoi correggerli. Quelli fra gli altri si segnano soltanto come già pagati: i tuoi Movimenti non cambiano.": "Yours become Entries, one at a time, and you can adjust them before recording. Those between other people are only marked as already paid: your Entries don't change.",
+  "il tuo": "yours",
+  "fra altri": "between others",
+  "Segna come pagati": "Mark as paid",
+  "Spunta almeno un pagamento": "Tick at least one payment",
+  "Segnati come già pagati": "Marked as already paid",
+  "Pareggio riaperto": "Settlement reopened",
   "Come si torna in pari": "How to settle up",
   "Il numero minimo di pagamenti che chiude tutti i conti.": "The smallest number of payments that settles everything.",
   "Movimenti del viaggio": "Trip entries",
@@ -7246,14 +7372,14 @@ var TESTI_EN = {
   "1 · Valuta e lingua": "1 · Currency and language",
   "Se lingua e valuta sono già quelle giuste, passa oltre. Altrimenti scegli qui la <b>valuta principale</b>: tutti i conteggi sono espressi in questa, e conviene sceglierla adesso, prima di registrare. La lingua si cambia in Preferenze.": "If your language and currency are already right, move on. Otherwise pick your <b>main currency</b> here: every total is expressed in it, and it's best to choose it now, before you record anything. The language is changed in Preferences.",
   "2 · Il saldo iniziale": "2 · The starting balance",
-  "Un <b>portafoglio</b> è ogni posto dove tieni dei soldi: conto, carta, contanti, PayPal. Per ognuno scrivi il <b>saldo iniziale</b>: quanto c'era prima del primo movimento che registri. Lo fai una volta sola, poi il saldo si aggiorna da solo.": "A <b>wallet</b> is any place where you keep money: account, card, cash, PayPal. For each one, write the <b>starting balance</b>: what it held before the first entry you record. You do it once, then the balance keeps itself up to date.",
+  "Un <b>portafoglio</b> è ogni posto dove tieni dei soldi: conto, carta, contanti, PayPal. Per ognuno serve il <b>saldo iniziale</b>: quanto c'era prima del primo movimento che registri. Lo imposti una volta sola da <b>Correggi</b> → «Saldo iniziale», poi il saldo si aggiorna da solo.": "A <b>wallet</b> is any place where you keep money: account, card, cash, PayPal. Each one needs a <b>starting balance</b>: what it held before the first entry you record. You set it once from <b>Adjust</b> → «Starting balance», then the balance keeps itself up to date.",
   "2 · Rinomina, archivia, elimina": "2 · Rename, archive, delete",
   "I portafogli proposti sono solo un esempio. <b>Rinomina</b> cambia il nome ovunque, anche nei movimenti già registrati; <b>Elimina</b> toglie un portafoglio che non usi; <b>Archivia</b> lo nasconde dai menu ma ne tiene lo storico.": "The wallets provided are just an example. <b>Rename</b> changes the name everywhere, including entries already recorded; <b>Delete</b> removes a wallet you don't use; <b>Archive</b> hides it from the menus but keeps its history.",
   "2 · Aggiungine uno": "2 · Add one",
   "3 · I fondi": "3 · The funds",
-  "I portafogli dicono <b>dove</b> sono i soldi, i fondi <b>a cosa servono</b>; quelli proposti sono un esempio, li cambi come vuoi. Scrivi il saldo iniziale di ognuno: la somma dei fondi deve essere uguale a quella dei portafogli, e ciò che non assegni resta in «Non allocato». Il Patrimonio, nel Riepilogo, ti dice se tornano.": "Wallets say <b>where</b> your money is, funds say <b>what it's for</b>; the ones provided are examples, change them as you like. Write each one's starting balance: the funds must add up to the same total as your wallets, and whatever you don't assign stays in «Unallocated». Net worth, in the Summary, tells you whether they match.",
+  "I portafogli dicono <b>dove</b> sono i soldi, i fondi <b>a cosa servono</b>; quelli proposti sono un esempio, li cambi come vuoi, o ne crei di nuovi dal modulo <b>Nuovo fondo</b> (se è chiuso, lo apri con <b>+ Nuovo fondo</b>). Da <b>Modifica</b> scrivi il saldo iniziale di ognuno: la somma dei fondi deve essere uguale a quella dei portafogli, e ciò che non assegni resta in «Non allocato». Il Patrimonio, nel Riepilogo, ti dice se tornano.": "Wallets say <b>where</b> your money is, funds say <b>what it's for</b>; the ones provided are examples, change them as you like, or create new ones from the <b>New fund</b> form (if it's closed, open it with <b>+ New fund</b>). From <b>Edit</b>, write each one's starting balance: the funds must add up to the same total as your wallets, and whatever you don't assign stays in «Unallocated». Net worth, in the Summary, tells you whether they match.",
   "4 · Gli elenchi": "4 · The lists",
-  "Sono le etichette dei movimenti: gli <b>argomenti</b> di uscite ed entrate e i livelli di <b>necessità</b> e di <b>stabilità</b>. Quelli di partenza vanno già bene: aggiungine o togline quando serve. In «Argomenti uscite» puoi fissare un <b>tetto mensile</b> per argomento, meglio dopo un mese o due, quando sai quanto spendi.": "These are the labels of your entries: the <b>categories</b> of expenses and income, and the <b>necessity</b> and <b>stability</b> levels. The ones provided are fine to start with: add or remove some when needed. In «Expense topics» you can set a <b>monthly cap</b> for each category, preferably after a month or two, once you know what you spend.",
+  "Sono le etichette dei movimenti: gli <b>argomenti</b> di uscite ed entrate e i livelli di <b>necessità</b> e di <b>stabilità</b>. Quelli di partenza vanno già bene: aggiungine o togline quando serve. In «Argomenti uscite» puoi fissare un <b>tetto mensile</b> per argomento, meglio dopo un mese o due, quando sai quanto spendi.": "These are the labels of your entries: the <b>categories</b> of expenses and income, and the <b>necessity</b> and <b>stability</b> levels. The ones provided are fine to start with: add or remove some when needed. In «Expense categories» you can set a <b>monthly cap</b> for each category, preferably after a month or two, once you know what you spend.",
   "5 · Allocazione automatica": "5 · Automatic allocation",
   "Facoltativa. Dice come dividere tra i fondi le entrate del mese: per esempio il 10% a «Imprevisti». Si imposta dopo i fondi, perché le regole li usano. Le regole propongono, tu confermi: nulla si sposta finché non premi «Genera i giroconti» nei Movimenti.": "Optional. It says how to split each month's income between your funds: for example 10% to «Unexpected». Set it up after the funds, since the rules use them. Rules suggest, you confirm: nothing moves until you tap «Generate the transfers» in Transactions.",
   "6 · Movimenti ricorrenti": "6 · Recurring entries",
@@ -7262,6 +7388,8 @@ var TESTI_EN = {
   "Adesso i movimenti. Li registri a mano con ＋ Aggiungi, oppure <b>importi il file CSV</b> dell'estratto conto della banca: i doppioni vengono riconosciuti, quindi puoi reimportare lo stesso mese senza timori. L'importazione è ancora <b>sperimentale</b>: può interpretare male alcuni dati, quindi controlla l'anteprima prima di confermare. Per provare l'app con dati finti c'è «Carica dati di esempio», più sotto.": "Now the entries. Record them by hand with ＋ Add, or <b>import the CSV file</b> of your bank statement: duplicates are recognised, so you can import the same month again without worry. The import is still <b>experimental</b>: it may misread some data, so check the preview before confirming. To try the app with made-up data there's «Load sample data», further down.",
   "Il backup": "Backup",
   "I dati stanno sul telefono, non su un server. Un <b>Backup completo</b> è un file che li rimette dentro Contami, anche su un altro telefono: fanne uno appena hai i primi dati, e poi ogni tanto. <b>Esporta</b> produce invece Excel, CSV o PDF da leggere altrove.": "Your data is kept on your phone, not on a server. A <b>Full backup</b> is a file that puts it all back into Contami, even on another phone: make one as soon as you have your first data, then every so often. <b>Export</b>, instead, produces Excel, CSV or PDF to read elsewhere.",
+  "Il backup su Google Drive": "Google Drive backup",
+  "Oltre al file, puoi tenere una copia dei dati su <b>Google Drive</b>: colleghi il tuo account e Contami la aggiorna da sola dopo ogni modifica. L'app accede soltanto a una cartella riservata e <b>non vede i tuoi file personali</b>. Su un telefono nuovo colleghi lo stesso account e premi <b>Ripristina da Drive</b>.": "As well as the file, you can keep a copy of your data on <b>Google Drive</b>: connect your account and Contami updates it by itself after every change. The app only reaches a private folder and <b>does not see your personal files</b>. On a new phone, connect the same account and press <b>Restore from Drive</b>.",
   "I viaggi di gruppo": "Group trips",
   "Per vacanze e spese condivise: ogni viaggio tiene i suoi movimenti a parte, e Contami calcola il numero minimo di pagamenti che chiude i conti tra tutti. Si comincia da <b>Nuovo viaggio</b>.": "For holidays and shared costs: each trip keeps its own entries apart, and Contami works out the fewest payments that settle everyone's accounts. You start with <b>New trip</b>.",
   "Guide e domande frequenti": "Guides and FAQ",
@@ -7384,6 +7512,7 @@ var SCHEMI_EN = [
   [/^Contiene ancora (.+): puoi archiviarlo lo stesso$/, "Still holds $1: you can archive it anyway"],
   [/^«(.+)» è usato da 1 movimento\.$/, function(_,p){ return "«"+(TESTI_EN[p]||p)+"» is used by 1 transaction."; }],
   [/^«(.+)» è usato da (\d+) movimenti\.$/, function(_,p,n){ return "«"+(TESTI_EN[p]||p)+"» is used by "+n+" transactions."; }],
+  [/^«(.+)» non ha movimenti\.$/, function(_,p){ return "«"+(TESTI_EN[p]||p)+"» has no transactions."; }],
   [/^«(.+)» è usato da alcune voci\. Rimuoverlo comunque\? Le voci restano invariate\.$/, function(_,v){ return "«"+(TESTI_EN[v]||v)+"» is used by some entries. Remove it anyway? The entries stay as they are."; }],
   [/^«(.+)» è usata da 1 movimento\.$/, "«$1» is used by 1 transaction."],
   [/^«(.+)» è usata da (\d+) movimenti\.$/, "«$1» is used by $2 transactions."],
@@ -7463,6 +7592,9 @@ var SCHEMI_EN = [
   [/^Eliminare «(.+)» e le (\d+) voci che ha creato nei Movimenti\?$/, "Delete «$1» and the $2 entries it created in Transactions?"],
   [/^Eliminare «(.+)»\?$/, "Delete «$1»?"],
   [/^Pareggio (\d+) di (\d+)$/, "Settlement $1 of $2"],
+  [/^1 pareggio segnato come pagato$/, "1 settlement marked as paid"],
+  [/^(\d+) pareggi segnati come pagati$/, "$1 settlements marked as paid"],
+  [/^(\d+) (?:movimento registrato|movimenti registrati), (\d+) (?:pareggio segnato|pareggi segnati) come pagat[oi]$/, "Entries recorded: $1 \u00b7 settlements marked as paid: $2"],
   [/^Nuovo nome per il livello «(.+)»$/, "New name for the level «$1»"],
   [/^Nuovo nome per il portafoglio «(.+)»$/, "New name for the wallet «$1»"],
   [/^libero (.+)$/, "free $1"],
@@ -7568,6 +7700,14 @@ var SCHEMI_EN = [
   [/^Anno (\d+) aggiunto$/, "Year $1 added"],
   [/^Correzioni di (.+):$/, function(_,p){ return "Adjustments for "+(TESTI_EN[p]||p)+":"; }],
   [/^Saldo di \u00ab(.+)\u00bb fissato a (.+)$/, "Balance of «$1» set to $2"],
+  [/^Saldo iniziale di «(.+)» fissato a (.+)$/, "Starting balance of «$1» set to $2"],
+  [/^Valuta di «(.+)» salvata$/, "Currency of «$1» saved"],
+  [/^Fondo «(.+)» aggiornato$/, function(_,f){ return "Fund «"+(TESTI_EN[f]||f)+"» updated"; }],
+  [/^Modifica «(.+)»$/, function(_,f){ return "Edit «"+(TESTI_EN[f]||f)+"»"; }],
+  [/^Elimina «(.+)»$/, function(_,f){ return "Delete «"+(TESTI_EN[f]||f)+"»"; }],
+  [/^Il saldo di oggi resta (.+)\. Il nuovo saldo iniziale vale solo per le date precedenti alla prima correzione \((.+)\)\.$/, "Today's balance stays $1. The new starting balance only applies to dates before the first adjustment ($2)."],
+  [/^Il saldo di oggi passa da (.+) a (.+)\. Aggiungo una correzione datata (.+)\.$/, "Today's balance goes from $1 to $2. I add an adjustment dated $3."],
+  [/^Con questo saldo iniziale il saldo di oggi passa da <b class="(pos|neg|dim)">(.+?)<\/b> a <b class="(pos|neg|dim)">(.+?)<\/b>\.$/, function(_,c1,a,c2,b){ return "With this starting balance, today's balance goes from <b class=\""+c1+"\">"+a+"</b> to <b class=\""+c2+"\">"+b+"</b>."; }],
   [/^Eliminare la regola su (.+)\?$/, function(_,f){ return "Delete the rule on "+(TESTI_EN[f]||f)+"?"; }],
   [/^Eliminare la rilevazione del (.+)\?$/, "Delete the reading from $1?"],
   [/^Esportazione non riuscita: (.+)$/, "Export failed: $1"],
@@ -7977,10 +8117,94 @@ function renderValute(){
   ritraduci();
 }
 
+/* ── Il modulo «Nuovo portafoglio» (1.6.2) ──
+   Una sola scheda per i portafogli: in cima il modulo per crearne uno
+   (nome, saldo iniziale, valuta), sotto l'elenco con il saldo di oggi, la
+   quota e l'ultima verifica. Il saldo iniziale e la valuta di un portafoglio
+   gia' creato si cambiano da «Correggi».
+   Il modulo e' aperto da solo quando non c'e' nessun portafoglio, o quando ci
+   sono soltanto quelli di esempio con cui parte l'app (nessun movimento,
+   nessuna correzione, nessun saldo iniziale): e' il momento in cui serve. Poi
+   resta chiuso dietro «+ Nuovo portafoglio». */
+var portNuovoAperto = null;   /* null: decide l'app; true o false: ha scelto chi la usa */
+
+function portafogliSoloDiEsempio(){
+  var base=defaults().config.portafogli, p=S.config.portafogli;
+  if(p.length!==base.length) return false;
+  for(var i=0;i<base.length;i++){ if(p[i]!==base[i]) return false; }
+  if(tx().length || rettifiche().length) return false;
+  return p.every(function(x){ return !(Number(S.config.saldiInizialiPortafogli[x])||0); });
+}
+
+function portNuovoVisibile(){
+  if(portNuovoAperto!==null) return portNuovoAperto;
+  return !S.config.portafogli.length || portafogliSoloDiEsempio();
+}
+
+/* le valute, con quella indicata gia' scelta */
+function riempiValute(sel, scelta){
+  sel.innerHTML="";
+  Object.keys(VALUTE).forEach(function(v){
+    var o=document.createElement("option"); o.value=v; o.textContent=v;
+    if(v===scelta) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+/* il modulo come nuovo: campi vuoti, la valuta principale */
+function ripristinaModuloPortafoglio(){
+  if(!$("newPort")) return;
+  $("newPort").value="";
+  $("newPortSaldo").value="";
+  $("newPortMulti").checked=false;
+  riempiValute($("newPortValuta"), valutaBase());
+}
+
+function aggiornaModuloPortafoglio(){
+  var box=$("portNuovoBox"), btn=$("btnNuovoPort");
+  if(!box || !btn) return;
+  /* la prima volta, e se nel frattempo e' cambiata la valuta principale */
+  if(!box._pronto || box._base!==valutaBase()){
+    ripristinaModuloPortafoglio(); box._pronto=true; box._base=valutaBase();
+  }
+  var aperto=portNuovoVisibile();
+  box.style.display = aperto ? "" : "none";
+  btn.style.display = aperto ? "none" : "";
+  /* senza portafogli non c'e' niente a cui tornare */
+  $("btnAnnullaPort").style.display = S.config.portafogli.length ? "" : "none";
+}
+
+function aggiungiPortafoglio(){
+  var nome=$("newPort").value.trim().replace(/\s+/g," ");
+  if(!nome){ toast("Scrivi il nome del portafoglio"); $("newPort").focus(); return; }
+  if(S.config.portafogli.some(function(x){ return x.toLowerCase()===nome.toLowerCase(); })){
+    toast("Esiste già un portafoglio con questo nome"); return; }
+  var grezzo=$("newPortSaldo").value.trim();
+  var saldo = grezzo ? leggiImporto(grezzo) : 0;
+  if(isNaN(saldo)){ toast("Il saldo iniziale non è un numero"); $("newPortSaldo").focus(); return; }
+
+  S.config.portafogli.push(nome);
+  S.config.saldiInizialiPortafogli[nome]=Math.round(saldo*100)/100;
+  /* la valuta e «più valute» si scrivono sempre, anche se uguali a quelle di
+     fabbrica: un portafoglio eliminato con questo stesso nome ha lasciato i
+     suoi valori, e non devono tornare */
+  S.config.valutePortafogli=S.config.valutePortafogli||{};
+  S.config.valutePortafogli[nome]=$("newPortValuta").value || valutaBase();
+  S.config.portafogliMultivaluta=(S.config.portafogliMultivaluta||[]).filter(function(x){ return x!==nome; });
+  if($("newPortMulti").checked) S.config.portafogliMultivaluta.push(nome);
+  if(S.config.saldiInizialiValute) delete S.config.saldiInizialiValute[nome];
+
+  portNuovoAperto=false;
+  ripristinaModuloPortafoglio();
+  save(); ridisegnaQui();
+  toast("Portafoglio aggiunto");
+}
+
 function renderPortafogli(){
   var body=$("portBody"), foot=$("portFoot");
   if(!body) return;
   body.innerHTML=""; foot.innerHTML="";
+  aggiornaModuloPortafoglio();
 
   var saldi={}, tot=0;
   /* un solo giro sui movimenti per tutti i portafogli, invece di uno
@@ -7993,7 +8217,7 @@ function renderPortafogli(){
 
   if(!S.config.portafogli.length){
     var tr0=el("tr"), td0=el("td"); td0.colSpan=5;
-    td0.innerHTML='<div class="empty"><strong>Nessun portafoglio</strong>Aggiungine uno qui sotto per iniziare a seguirne il saldo.</div>';
+    td0.innerHTML='<div class="empty"><strong>Nessun portafoglio</strong>Aggiungine uno qui sopra per iniziare a seguirne il saldo.</div>';
     tr0.appendChild(td0); body.appendChild(tr0); return;
   }
 
@@ -8040,7 +8264,7 @@ function renderPortafogli(){
       uv.appendChild(document.createTextNode(dmy(ultima.data)));
       if(ultima.nota){
         var n=el("span","dim"); n.style.fontSize="12px";
-        n.textContent=" \u00b7 "+ultima.nota; uv.appendChild(n);
+        n.textContent=" · "+ultima.nota; uv.appendChild(n);
       }
     } else {
       uv.className="dim"; uv.textContent=trDin("mai corretto");
@@ -8048,16 +8272,65 @@ function renderPortafogli(){
     rigaT.appendChild(uv);
 
     var az=cella("","azioni"), w=el("div","row-tools");
-    if(!arch){
-      var b1=el("button","btn sm","Correggi");
-      b1.addEventListener("click",function(){ apriRettifica(p); });
-      w.appendChild(b1);
+    var nMov=tx().filter(function(t){
+      return t.portafoglio===p || t.portafoglioDest===p; }).length;
+
+    /* Correggi c'e' per tutti, anche per gli archiviati: il loro saldo conta nei
+       totali, e prima della 1.6.2 se ne cambiavano saldo iniziale e valuta */
+    var b1=el("button","btn sm","Correggi");
+    b1.setAttribute("data-az","correggi");
+    b1.title="Correggi il saldo di oggi, il saldo iniziale o la valuta";
+    b1.addEventListener("click",function(){ apriRettifica(p); });
+    w.appendChild(b1);
+
+    if(arch){
+      var br=el("button","btn sm","Riattiva");
+      br.title="Torna disponibile quando registri un movimento";
+      br.addEventListener("click",function(){ archiviaPortafoglio(p,false); });
+      w.appendChild(br);
+    } else {
+      var ba=el("button","btn sm","Archivia");
+      var vuoto=Math.abs(v)<0.005;
+      /* Prima era disattivato quando il portafoglio conteneva ancora
+         qualcosa. Ma un pulsante spento il foglio di stile non lo
+         distingue abbastanza: sembrava premibile e non faceva niente.
+         E archiviare non distrugge nulla — il saldo continua a
+         contare nei totali e si riattiva quando si vuole — quindi
+         tanto vale permetterlo, chiedendo conferma. */
+      ba.title = vuoto
+        ? "Lo toglie dai menu: resta nello storico ma non te lo propone più"
+        : "Contiene ancora "+money(v)+": puoi archiviarlo lo stesso";
+      ba.addEventListener("click",function(){
+        if(!vuoto && !confirm(
+          "«"+p+"» "+tr("contiene ancora")+" "+money(v)+".\n\n"+
+          tr("Archiviandolo sparisce dai menu, ma il saldo continua a contare nei totali e lo storico resta intatto. Puoi riattivarlo quando vuoi.")+
+          "\n\n"+tr("Archiviare comunque?"))) return;
+        archiviaPortafoglio(p,true);
+      });
+      w.appendChild(ba);
     }
-    if(rs.length){
-      var b2=el("button","btn sm ghost","Storico");
-      b2.addEventListener("click",function(){ mostraStoricoRettifiche(p); });
-      w.appendChild(b2);
-    }
+
+    var brn=el("button","btn sm","Rinomina");
+    brn.title="Cambia il nome ovunque: movimenti, correzioni e regole compresi";
+    brn.addEventListener("click",function(){ rinominaPortafoglio(p); });
+    w.appendChild(brn);
+
+    var bd=el("button","btn sm danger","Elimina");
+    bd.addEventListener("click",function(){
+      /* Chiede sempre (1.6.2, ultimi ritocchi): senza movimenti spariscono comunque il saldo
+         iniziale e le correzioni di saldo, e non c'e' modo di tornare indietro. I Fondi chiedono sempre. */
+      var domanda = nMov
+        ? "«"+p+"» è usato da "+nMov+" moviment"+(nMov===1?"o":"i")+
+          ".\n\nEliminarlo comunque? I movimenti restano invariati, ma il portafoglio sparisce dai prospetti.\n\nSe vuoi solo toglierlo dai menu, usa Archivia."
+        : "«"+p+"» non ha movimenti.\n\nEliminandolo si perdono anche il saldo iniziale e le correzioni di saldo.\n\nEliminarlo comunque?\n\nSe vuoi solo toglierlo dai menu, usa Archivia.";
+      if(!confirm(domanda)) return;
+      S.config.portafogli=S.config.portafogli.filter(function(x){ return x!==p; });
+      S.config.portafogliArchiviati=(S.config.portafogliArchiviati||[]).filter(function(x){ return x!==p; });
+      delete S.config.saldiInizialiPortafogli[p];
+      S.rettifiche=rettifiche().filter(function(r){ return r.portafoglio!==p; });
+      save(); ridisegnaQui(); toast("Portafoglio rimosso");
+    });
+    w.appendChild(bd);
     az.appendChild(w); rigaT.appendChild(az);
     body.appendChild(rigaT);
   });
@@ -8069,7 +8342,7 @@ function renderPortafogli(){
   var fondi=bucketBalances();
   var sommaFondi=Math.round(S.config.allocazioni.reduce(function(a,k){ return a+(fondi[k]||0); },0)*100)/100;
   var coerente=Math.abs(sommaFondi-tot)<0.01;
-  var cc=cella("Confronto con i fondi","", coerente?"corrisponde ai fondi":"scarto di "+money(sommaFondi-tot));
+  var cc=cella("Confronto con i fondi","", coerente?"corrisponde ai fondi":tr("scarto di")+" "+money(sommaFondi-tot));
   cc.className = coerente ? "dim" : "neg";
   cc.title = coerente
     ? "La somma dei portafogli coincide con la somma dei fondi: i due prospetti sono allineati."
@@ -8079,6 +8352,16 @@ function renderPortafogli(){
   foot.appendChild(ftr);
   ritraduci();
 }
+
+$("btnNuovoPort").addEventListener("click",function(){
+  ripristinaModuloPortafoglio(); portNuovoAperto=true; aggiornaModuloPortafoglio();
+  $("newPort").focus();
+});
+$("btnAnnullaPort").addEventListener("click",function(){
+  portNuovoAperto=false; ripristinaModuloPortafoglio(); aggiornaModuloPortafoglio();
+});
+$("btnAddPort").addEventListener("click",aggiungiPortafoglio);
+
 
 
 /* ── Preferenze ── */
@@ -8104,7 +8387,7 @@ $("barraFabbrica").addEventListener("click",function(){
    anche il titolo, facendo comparire «Riepilogo» al posto del nome. */
 function ridisegnaQui(){
   if(view==="sezione"){
-    if(sezioneAperta==="portafogli"){ renderPortafogli(); renderSetPortafogli(); }
+    if(sezioneAperta==="portafogli"){ renderPortafogli(); }
     else if(sezioneAperta==="fondi"){ renderRibbon(); renderImpostazioni(); }
     else if(sezioneAperta==="valute"){ renderValute(); }
     else if(sezioneAperta==="viaggi"){ renderViaggi(); }
@@ -8342,7 +8625,7 @@ function riapriPareggio(t){
     if(spesa) return;
     var imp=Math.round((Number(t.importo)||0)*100)/100;
     suoi=v.saldato.filter(function(p){
-      return !p.idMovimento && p.data===t.data && Math.round((Number(p.importo)||0)*100)/100===imp;
+      return !p.idMovimento && !p.altri && p.data===t.data && Math.round((Number(p.importo)||0)*100)/100===imp;
     });
     if(suoi.length!==1) return;
   }
@@ -8398,6 +8681,25 @@ function renderViaggioAperto(){
       ul.appendChild(r);
     });
     box.appendChild(ul);
+  }
+
+  /* i pareggi fra gli altri segnati come pagati (1.6.2): non hanno un Movimento da cancellare,
+     quindi da qui si riaprono */
+  var boxSeg=$("vgSegnati"); boxSeg.innerHTML="";
+  var segnatiAltri=(v.saldato||[]).filter(function(x){ return x.altri; });
+  if(segnatiAltri.length){
+    var titSeg=el("h4",null,"Segnati come già pagati"); titSeg.style.margin="14px 0 6px";
+    boxSeg.appendChild(titSeg);
+    segnatiAltri.forEach(function(x){
+      var rigaSeg=el("div");
+      rigaSeg.style.cssText="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0";
+      rigaSeg.appendChild(el("span",null,nomeMembro(v,x.da)+" \u2192 "+nomeMembro(v,x.a)+" : "+money(x.importo)+
+                             (x.data ? " \u00b7 "+dataBreve(x.data) : "")));
+      var bSeg=el("button","btn sm ghost","Riapri");
+      bSeg.addEventListener("click",function(){ riapriPareggioAltri(v, x); });
+      rigaSeg.appendChild(bSeg);
+      boxSeg.appendChild(rigaSeg);
+    });
   }
 
   /* movimenti */
@@ -8568,25 +8870,125 @@ function pgMostraPasso(){
   ritraduci();
 }
 
+/* ── L'elenco dei pareggi del viaggio (1.6.2) ─────────────────
+   «Registra i pareggi nei Movimenti» apre prima un elenco con tutti i pagamenti che
+   chiudono i conti del viaggio, ciascuno con la sua spunta. I tuoi (quelli in cui dai o
+   ricevi) sono spuntati e diventano Movimenti, uno alla volta, nel modulo di sempre.
+   Quelli fra gli altri non lo sono: spuntandoli si segnano come «gia' pagati» nel viaggio
+   (v.saldato, con altri:true) e basta, perche' i tuoi conti non c'entrano. Fino alla
+   1.6.1 il pulsante offriva solo i tuoi: un pagamento fra altri due restava aperto per
+   sempre, senza modo di segnarlo. */
+var plVoci=[], pgAltri=[];
+
 function apriPareggiViaggio(){
   var v=viaggioDa(viaggioAperto); if(!v) return;
   var io=ioDelViaggio(v);
   if(!io){ toast(tr("Segna prima quale dei partecipanti sei tu")); return; }
 
-  var p=pareggiViaggio(v).filter(function(x){ return x.da===io.id || x.a===io.id; });
+  var p=pareggiViaggio(v);
   if(!p.length){ toast(tr("Non c'è niente da pareggiare")); return; }
 
-  pgCoda=p; pgIndice=0; pgRaccolti=[];
-  $("pgData").value="";
+  /* tutti i pagamenti che chiudono i conti: i tuoi spuntati, quelli fra gli altri no */
+  plVoci=p.map(function(x){
+    var mio = x.da===io.id || x.a===io.id;
+    return {da:x.da, a:x.a, importo:x.importo, mio:mio, scelto:mio};
+  });
+  pgAltri=[];
+  disegnaElencoPareggi(v);
+  $("plData").value=ymd(new Date());
+  $("plMask").classList.add("on");
+  sospendiBanner(true);
+  ritraduci();
+}
+
+function disegnaElencoPareggi(v){
+  var box=$("plElenco"); box.innerHTML="";
+  plVoci.forEach(function(x){
+    var lab=el("label","pop-voce");
+    lab.style.cssText="display:flex;align-items:center;gap:8px;padding:6px 0";
+    var ck=el("input"); ck.type="checkbox"; ck.checked=!!x.scelto;
+    ck.addEventListener("change",function(){ x.scelto=ck.checked; aggiornaPulsanteElenco(); });
+    lab.appendChild(ck);
+    var testo=el("span",null,nomeMembro(v,x.da)+" \u2192 "+nomeMembro(v,x.a)+" : "+money(x.importo));
+    testo.style.flex="1";
+    lab.appendChild(testo);
+    lab.appendChild(el("span","dim",x.mio ? "il tuo" : "fra altri"));
+    box.appendChild(lab);
+  });
+  aggiornaPulsanteElenco();
+}
+
+/* «Avanti» se c'e' almeno un tuo pagamento spuntato (si apre il modulo), «Segna come
+   pagati» se ci sono solo quelli degli altri (si segnano subito) */
+function aggiornaPulsanteElenco(){
+  var mieiScelti=plVoci.some(function(x){ return x.mio && x.scelto; });
+  $("plConferma").textContent=trDin(mieiScelti ? "Avanti" : "Segna come pagati");
+}
+
+function chiudiElencoPareggi(){
+  $("plMask").classList.remove("on");
+  sospendiBanner(false);
+  plVoci=[];
+}
+
+function confermaElencoPareggi(){
+  /* un secondo tocco su «Avanti» a elenco gia' chiuso non deve fare niente (ne' dire "spunta...") */
+  if(!$("plMask").classList.contains("on")) return;
+  var v=viaggioDa(viaggioAperto); if(!v) return;
+  var io=ioDelViaggio(v); if(!io) return;
+  var scelti=plVoci.filter(function(x){ return x.scelto; });
+  if(!scelti.length){ toast(tr("Spunta almeno un pagamento")); return; }
+  var data=$("plData").value;
+  if(!data){ toast(tr("Manca la data")); return; }
+
+  var miei=scelti.filter(function(x){ return x.mio; });
+  var altri=scelti.filter(function(x){ return !x.mio; });
+  chiudiElencoPareggi();
+
+  /* quelli fra gli altri si segnano insieme ai tuoi, all'ultimo passo del modulo: se
+     annulli il modulo non si segna niente */
+  pgAltri=altri.map(function(x){ return {da:x.da, a:x.a, importo:x.importo, data:data, altri:true}; });
+
+  if(!miei.length){
+    v.saldato=(v.saldato||[]).concat(pgAltri);
+    var quanti=pgAltri.length;
+    pgAltri=[];
+    save();
+    ridisegnaQui();
+    toast(messaggioPareggi(0, quanti));
+    return;
+  }
+
+  /* i tuoi: il modulo di sempre, un passo per ciascuno */
+  pgCoda=miei.map(function(x){ return {da:x.da, a:x.a, importo:x.importo}; });
+  pgIndice=0; pgRaccolti=[];
+  $("pgData").value=data;
   pgMostraPasso();
   $("pgMask").classList.add("on");
   sospendiBanner(true);
 }
 
+function messaggioPareggi(movimenti, segnati){
+  var m=accorda(movimenti, "movimento registrato", "movimenti registrati");
+  if(!segnati) return m;
+  var s=accorda(segnati, "pareggio segnato come pagato", "pareggi segnati come pagati");
+  return movimenti ? m+", "+s : s;
+}
+
+/* Un pareggio fra gli altri segnato come pagato non ha un Movimento da cancellare, come
+   quelli tuoi (riapriPareggio): da qui si riapre. Non tocca i Movimenti. */
+function riapriPareggioAltri(v, p){
+  v.saldato=(v.saldato||[]).filter(function(x){ return x!==p; });
+  save();
+  renderViaggi();
+  ritraduci();
+  toast(tr("Pareggio riaperto"));
+}
+
 function chiudiPareggiViaggio(){
   $("pgMask").classList.remove("on");
   sospendiBanner(false);
-  pgCoda=[]; pgIndice=0; pgRaccolti=[];
+  pgCoda=[]; pgIndice=0; pgRaccolti=[]; pgAltri=[];
 }
 
 /* Raccoglie il passo corrente e passa al successivo, oppure scrive
@@ -8637,12 +9039,15 @@ function registraPareggiViaggio(){
 
   pgRaccolti.forEach(function(r){ tx().push(r.rec); });
   v.saldato = (v.saldato||[]).concat(pgRaccolti.map(function(r){ return r.pareggio; }));
+  /* i pareggi fra gli altri spuntati nell'elenco (1.6.2): solo segnati come pagati, senza Movimenti */
+  var segnati = pgAltri.length;
+  v.saldato = v.saldato.concat(pgAltri);
   var quanti = pgRaccolti.length;
 
   save();
   chiudiPareggiViaggio();
   ridisegnaQui();
-  toast(accorda(quanti, "movimento registrato", "movimenti registrati"));
+  toast(messaggioPareggi(quanti, segnati));
 }
 
 function aggiornaNotaCambioVm(){ notaCambio("vm"); }
@@ -8760,22 +9165,76 @@ function mostraStoricoRettifiche(p){
   }
 }
 
-/* ── Modale di correzione ── */
-var rettPortafoglio=null;
-function apriRettifica(p){
+/* ── Modale di correzione ──
+   Tre scelte in cima (1.6.2): il saldo di oggi (la correzione di sempre), il
+   saldo iniziale, la valuta. Lo Storico delle correzioni sta qui dentro, e si
+   vede solo se ce ne sono. */
+var rettPortafoglio=null, rettModo="oggi";
+
+/* Il saldo che risulterebbe dal solo saldo iniziale indicato e dai movimenti
+   fino a una data, senza nessuna correzione: serve a ricalcolare il saldo
+   quando si cambia il saldo iniziale. */
+function saldoDaSaldoIniziale(p, iniz, allaData){
+  var limite = allaData || "9999-12-31", somma = 0;
+  tx().forEach(function(t){
+    if(!t.data || t.data>limite) return;
+    somma += effettoSuPortafoglio(t,p);
+  });
+  return Math.round(((Number(iniz)||0)+somma)*100)/100;
+}
+
+function apriRettifica(p, modo){
   rettPortafoglio=p;
-  $("rettTitolo").textContent="Correggi \u00ab"+p+"\u00bb";
-  var attuale=saldoPortafoglio(p);
-  $("rettInfo").innerHTML='<p class="hint" style="margin:0 0 14px">'+
-    "Secondo i movimenti registrati questo portafoglio contiene <b>"+money(attuale)+"</b>.<br>"+
-    "Scrivi qui sotto quanto c\u0027\u00e8 davvero: da questa data il conteggio riparte dalla cifra che indichi.</p>";
+  $("rettTitolo").textContent="Correggi «"+p+"»";
   $("rettData").value=ymd(new Date());
   $("rettSaldo").value="";
-  $("rettSaldo").placeholder=importoPerCampo(attuale);
   $("rettNota").value="";
   $("rettScarto").innerHTML="";
   $("rettMask").classList.add("on");
   sospendiBanner(true);
+  impostaModoRettifica(modo || "oggi");
+}
+
+/* Cambia scelta dentro la finestra: mostra il pannello giusto, il suo testo e
+   il pulsante che salva. */
+function impostaModoRettifica(m){
+  var p=rettPortafoglio; if(!p) return;
+  rettModo=m;
+  [].forEach.call($("rettModi").querySelectorAll("button"),function(b){
+    var on=b.getAttribute("data-modo")===m;
+    b.className = on ? "on" : "";
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  $("rettPOggi").style.display = m==="oggi" ? "" : "none";
+  $("rettPIniziale").style.display = m==="iniziale" ? "" : "none";
+  $("rettPValuta").style.display = m==="valuta" ? "" : "none";
+  $("rettStoricoBox").style.display = rettifichePortafoglio(p).length ? "" : "none";
+
+  var info=$("rettInfo");
+  if(m==="oggi"){
+    var attuale=saldoPortafoglio(p);
+    $("rettSaldo").placeholder=importoPerCampo(attuale);
+    info.innerHTML='<p class="hint" style="margin:0 0 14px">'+
+      "Secondo i movimenti registrati questo portafoglio contiene <b>"+money(attuale)+"</b>.<br>"+
+      "Scrivi qui sotto quanto c'è davvero: da questa data il conteggio riparte dalla cifra che indichi.</p>";
+    $("rettSalva").textContent="Fissa questo saldo";
+    aggiornaAnteprimaScarto();
+  } else if(m==="iniziale"){
+    info.innerHTML='<p class="hint" style="margin:0 0 14px">'+
+      "Il saldo iniziale è quanto c&#39;era <b>prima</b> del primo movimento registrato. "+
+      "Cambiandolo, il saldo di oggi si ricalcola.</p>";
+    $("rettIniz").value=importoPerCampo(Number(S.config.saldiInizialiPortafogli[p])||0);
+    document.querySelector('input[name="rettInizModo"][value="tieni"]').checked=true;
+    $("rettSalva").textContent="Fissa il saldo iniziale";
+    aggiornaAnteprimaIniziale();
+  } else {
+    info.innerHTML='<p class="hint" style="margin:0 0 14px">'+
+      "È la valuta che il portafoglio propone quando registri un movimento. "+
+      "Se tiene più valute, i saldi restano separati per valuta.</p>";
+    riempiValute($("rettValuta"), valutaDiPortafoglio(p));
+    $("rettMulti").checked=portafoglioMultivaluta(p);
+    $("rettSalva").textContent="Salva la valuta";
+  }
   ritraduci();
 }
 function chiudiRettifica(){
@@ -8802,22 +9261,132 @@ $("rettAnnulla").addEventListener("click",chiudiRettifica);
 $("rettMask").addEventListener("click",function(e){ if(e.target===this) chiudiRettifica(); });
 $("rettSaldo").addEventListener("input",aggiornaAnteprimaScarto);
 $("rettData").addEventListener("change",aggiornaAnteprimaScarto);
-$("rettSalva").addEventListener("click",function(){
-  if(!rettPortafoglio) return;
+/* La data della correzione che «Ricalcola» aggiunge: oggi; se l'ultima
+   correzione e' piu' in la, a quella data, altrimenti non cambierebbe il saldo
+   di oggi. */
+function dataRicalcoloIniziale(rs){
+  var oggi=ymd(new Date()), ultima=rs[rs.length-1];
+  return ultima && ultima.data>oggi ? ultima.data : oggi;
+}
+
+/* L'anteprima del saldo iniziale: come cambia il saldo di oggi. Se il
+   portafoglio ha gia' delle correzioni compare la scelta fra tenere il saldo
+   corretto e ricalcolarlo dal nuovo saldo iniziale. In un portafoglio con piu'
+   valute la scelta non c'e': la correzione automatica ha un solo totale e
+   appiattirebbe i saldi per valuta sulla valuta principale. */
+function aggiornaAnteprimaIniziale(){
+  var p=rettPortafoglio;
+  if(!p || rettModo!=="iniziale") return;
+  var box=$("rettInizAnteprima"), scelta=$("rettInizScelta");
+  scelta.style.display="none";
+  var v=leggiImporto($("rettIniz").value);
+  if(isNaN(v)){ box.innerHTML=""; return; }
+  v=Math.round(v*100)/100;
+  var vecchio=Number(S.config.saldiInizialiPortafogli[p])||0;
+  if(Math.abs(v-vecchio)<0.005){
+    box.innerHTML='<p class="hint" style="margin:12px 0 0">Questo è già il saldo iniziale.</p>';
+    return;
+  }
+  var oggi=saldoPortafoglio(p), nuovo=saldoDaSaldoIniziale(p,v);
+  var cl=function(n){ return n<0?"neg":n>0?"pos":"dim"; };
+  var rs=rettifichePortafoglio(p);
+  if(!rs.length){
+    box.innerHTML='<p class="hint" style="margin:12px 0 0">Con questo saldo iniziale il saldo di oggi passa da <b class="'+cl(oggi)+'">'+
+      money(oggi)+'</b> a <b class="'+cl(nuovo)+'">'+money(nuovo)+'</b>.</p>';
+    return;
+  }
+  var frase="Il saldo di oggi resta "+money(oggi)+". Il nuovo saldo iniziale vale solo per le date precedenti alla prima correzione ("+dmy(rs[0].data)+").";
+  if(portafoglioMultivaluta(p)){
+    box.innerHTML='<p class="hint" style="margin:12px 0 0">'+frase+'</p>'+
+      '<p class="hint" style="margin:6px 0 0">Il portafoglio tiene più valute: il saldo di oggi non si ricalcola da qui. Per cambiarlo usa «Saldo di oggi».</p>';
+    ritraduci();
+    return;
+  }
+  box.innerHTML="";
+  scelta.style.display="";
+  $("rettInizTieni").textContent=frase;
+  $("rettInizRicalcola").textContent="Il saldo di oggi passa da "+money(oggi)+" a "+money(nuovo)+". Aggiungo una correzione datata "+dmy(dataRicalcoloIniziale(rs))+".";
+  ritraduci();
+}
+
+/* Cambiare il saldo iniziale. Senza correzioni basta cambiarlo: il saldo di
+   oggi si ricalcola da solo. Con delle correzioni il saldo di oggi riparte
+   dall'ultima, e il nuovo saldo iniziale non lo tocca; chi lo vuole ricalcolato
+   sceglie «Ricalcola»: si aggiunge una correzione di oggi con il saldo che
+   viene dal nuovo saldo iniziale e da tutti i movimenti (le correzioni
+   precedenti restano nello storico, e la differenza confluisce nel fondo di
+   base come ogni correzione, cosi' portafogli e fondi restano allineati). */
+function salvaRettificaIniziale(){
+  var p=rettPortafoglio; if(!p) return;
+  var v=leggiImporto($("rettIniz").value);
+  if(isNaN(v)){ toast("Inserisci il saldo iniziale"); return; }
+  v=Math.round(v*100)/100;
+  var vecchio=Number(S.config.saldiInizialiPortafogli[p])||0;
+  if(Math.abs(v-vecchio)<0.005){ toast("Il saldo iniziale è già questo"); return; }
+  var rs=rettifichePortafoglio(p);
+  var scelta=document.querySelector('input[name="rettInizModo"]:checked');
+  var ricalcola = rs.length>0 && !portafoglioMultivaluta(p) && !!scelta && scelta.value==="ricalcola";
+  S.config.saldiInizialiPortafogli[p]=v;
+  if(ricalcola){
+    var data=dataRicalcoloIniziale(rs);
+    S.rettifiche=rettifiche().filter(function(r){ return !(r.portafoglio===p && r.data===data); });
+    rettifiche().push({
+      id:uid(), portafoglio:p, data:data,
+      saldo:saldoDaSaldoIniziale(p,v,data),
+      nota: lingua()==="en" ? "Opening balance changed" : "Saldo iniziale modificato"
+    });
+  }
+  save(); chiudiRettifica(); ridisegnaQui(); if(typeof vibra==="function") vibra();
+  toast("Saldo iniziale di «"+p+"» fissato a "+money(v));
+}
+
+function salvaRettificaValuta(){
+  var p=rettPortafoglio; if(!p) return;
+  var val=$("rettValuta").value || valutaBase();
+  var multi=$("rettMulti").checked;
+  var cambiato = val!==valutaDiPortafoglio(p) || multi!==portafoglioMultivaluta(p);
+  S.config.valutePortafogli=S.config.valutePortafogli||{};
+  S.config.valutePortafogli[p]=val;
+  S.config.portafogliMultivaluta=(S.config.portafogliMultivaluta||[]).filter(function(x){ return x!==p; });
+  if(multi) S.config.portafogliMultivaluta.push(p);
+  save(); chiudiRettifica(); ridisegnaQui();
+  if(cambiato){ if(typeof vibra==="function") vibra(); toast("Valuta di «"+p+"» salvata"); }
+}
+
+/* La correzione di sempre: il saldo reale a una data. */
+function salvaRettificaOggi(){
+  var p=rettPortafoglio; if(!p) return;
   var v=leggiImporto($("rettSaldo").value);
   if(isNaN(v)){ toast("Inserisci il saldo reale"); return; }
   var data=$("rettData").value;
   if(!data){ toast("Manca la data"); return; }
   /* una sola correzione per data: la seconda sostituisce la prima */
   S.rettifiche=rettifiche().filter(function(r){
-    return !(r.portafoglio===rettPortafoglio && r.data===data);
+    return !(r.portafoglio===p && r.data===data);
   });
   rettifiche().push({
-    id:uid(), portafoglio:rettPortafoglio, data:data,
+    id:uid(), portafoglio:p, data:data,
     saldo:Math.round(v*100)/100, nota:$("rettNota").value.trim()
   });
-  save(); chiudiRettifica(); renderRiepilogo();
-  toast("Saldo di \u00ab"+rettPortafoglio+"\u00bb fissato a "+money(v));
+  save(); chiudiRettifica(); ridisegnaQui(); if(typeof vibra==="function") vibra();
+  toast("Saldo di «"+p+"» fissato a "+money(v));
+}
+
+$("rettSalva").addEventListener("click",function(){
+  if(rettModo==="iniziale") salvaRettificaIniziale();
+  else if(rettModo==="valuta") salvaRettificaValuta();
+  else salvaRettificaOggi();
+});
+[].forEach.call($("rettModi").querySelectorAll("button"),function(b){
+  b.addEventListener("click",function(){
+    if(b.getAttribute("data-modo")===rettModo) return;   /* gia' qui: non buttare via quel che hai scritto */
+    impostaModoRettifica(b.getAttribute("data-modo"));
+  });
+});
+$("rettIniz").addEventListener("input",aggiornaAnteprimaIniziale);
+$("rettStorico").addEventListener("click",function(){
+  var p=rettPortafoglio; if(!p) return;
+  chiudiRettifica(); mostraStoricoRettifiche(p);
 });
 
 /* L'etichetta di un segmento del nastro: carattere monospaziato da
@@ -8829,6 +9398,7 @@ function etichettaStaNelNastro(testo, quota, largNastro){
 }
 
 function renderRibbon(){
+  aggiornaModuloFondo();
   var bal=bucketBalances();
   var keys=fondiOrdinati();
   /* il nastro rappresenta i fondi ancora in gioco: i conclusi sono storia */
@@ -8857,7 +9427,7 @@ function renderRibbon(){
       var seg=el("div","ribbon-seg");
       seg.style.flex=(base[k]/baseTot*100)+" 1 0";
       seg.style.setProperty("--c",col);
-      seg.title = k+" · "+money(saldo)+(obj>0 ? " di "+money(obj)+" ("+pct(saldo/obj*100)+")" : "");
+      seg.title = k+" · "+money(saldo)+(obj>0 ? (lingua()==="en" ? " of " : " di ")+money(obj)+" ("+pct(saldo/obj*100)+")" : "");
       var fill=el("div","ribbon-fill");
       fill.style.width=(quota*100)+"%";
       seg.appendChild(fill);
@@ -8919,22 +9489,22 @@ function renderRibbon(){
     }
     rigaT.appendChild(mc);
 
-    /* azioni: il passaggio di stato è sempre esplicito, mai automatico */
+    /* azioni: il passaggio di stato è sempre esplicito, mai automatico. Poi, per
+       tutti i fondi, Modifica (saldo iniziale e obiettivo); Rinomina ed Elimina
+       non ci sono per «Non allocato» (1.6.2: una scheda sola, come i Portafogli) */
     var az=cella("","azioni"), w=el("div","row-tools");
     if(st===""){
       if(raggiunto){
         var b1=el("button","btn sm ok","Segna completato");
-        b1.title="Hai raggiunto l\u0027obiettivo: il denaro resta nel fondo";
+        b1.title="Hai raggiunto l'obiettivo: il denaro resta nel fondo";
         b1.addEventListener("click",function(){ impostaStato(k,"completato"); });
         w.appendChild(b1);
-      } else {
-        w.appendChild(el("span","dim","—"));
       }
     } else if(st==="completato"){
       var b2=el("button","btn sm","Ha svolto il suo scopo");
-      b2.title="Il denaro è stato speso per la sua finalità: archivia il fondo in fondo all\u0027elenco";
+      b2.title="Il denaro è stato speso per la sua finalità: archivia il fondo in fondo all'elenco";
       b2.addEventListener("click",function(){
-        if(Math.abs(v)>0.005 && !confirm("«"+k+"» contiene ancora "+money(v)+".\n\nArchiviarlo comunque? Il saldo resta visibile ma il fondo passa in fondo all\u0027elenco.")) return;
+        if(Math.abs(v)>0.005 && !confirm("«"+k+"» contiene ancora "+money(v)+".\n\nArchiviarlo comunque? Il saldo resta visibile ma il fondo passa in fondo all'elenco.")) return;
         impostaStato(k,"concluso");
       });
       var b3=el("button","btn sm ghost","Riapri");
@@ -8945,6 +9515,21 @@ function renderRibbon(){
       b4.title="Rimetti il fondo tra quelli attivi";
       b4.addEventListener("click",function(){ impostaStato(k,""); });
       w.appendChild(b4);
+    }
+    var bm=el("button","btn sm","Modifica");
+    bm.setAttribute("data-az","modifica");
+    bm.title="Cambia il saldo iniziale e l'obiettivo";
+    bm.addEventListener("click",function(){ apriModificaFondo(k); });
+    w.appendChild(bm);
+    if(k!==FONDO_BASE){
+      var brn=el("button","btn sm","Rinomina");
+      brn.title="Cambia il nome ovunque: movimenti e regole compresi";
+      brn.addEventListener("click",function(){ rinominaFondo(k); });
+      w.appendChild(brn);
+      var bd=el("button","btn sm danger","Elimina");
+      bd.disabled = S.config.allocazioni.length<=1;
+      bd.addEventListener("click",function(){ chiediEliminaFondo(k); });
+      w.appendChild(bd);
     }
     az.appendChild(w); rigaT.appendChild(az);
     body.appendChild(rigaT);
@@ -9018,7 +9603,11 @@ function nomeMeseCorrente(){
   var d=new Date();
   var nomi=["gennaio","febbraio","marzo","aprile","maggio","giugno",
             "luglio","agosto","settembre","ottobre","novembre","dicembre"];
-  return trDin(nomi[d.getMonth()])+" "+d.getFullYear();
+  /* In italiano il mese va in minuscolo («ottobre 2026»). In inglese ha la maiuscola
+     («October 2026»): il dizionario ha i nomi di MESI, con la maiuscola. Cercava quello in
+     minuscolo, non lo trovava e restava italiano (1.6.2) */
+  var mese = lingua()==="it" ? nomi[d.getMonth()] : trDin(MESI[d.getMonth()]);
+  return mese+" "+d.getFullYear();
 }
 
 /* La spesa media al mese, argomento per argomento, sui dodici mesi
@@ -9771,61 +10360,10 @@ function renderImpostazioni(){
   /* La testata la scrive chi apre la sezione: questa funzione ne
      disegna il contenuto. Fino alla 1.5.2 scriveva «Impostazioni»
      sopra tutte, al posto del titolo appena messo da apriSezione(). */
-  var bal=bucketBalances();
-  var body=$("setAlloc"); body.innerHTML="";
-  var totObj=0;
-  S.config.allocazioni.forEach(function(k){
-    totObj += Number(S.config.obiettivi[k])||0;
-    var rigaT=el("tr");
-    var nm=cella("Fondo","testata");
-    var d=el("span","dot"); d.style.background=coloreFondo(k);
-    nm.appendChild(d); nm.appendChild(document.createTextNode(k));
-    rigaT.appendChild(nm);
-
-    var c1=cella(conSimbolo("Saldo iniziale €", valutaBase()),"num");
-    var i1=document.createElement("input");
-    i1.type="text"; i1.inputMode="decimal"; i1.enterKeyHint="done"; i1.style.textAlign="right";
-    i1.value=importoPerCampo(Number(S.config.saldiIniziali[k])||0);
-    i1.addEventListener("change",function(){
-      S.config.saldiIniziali[k]=leggiImporto(this.value)||0; save(); renderImpostazioni();
-    });
-    c1.appendChild(i1); rigaT.appendChild(c1);
-
-    var c2=cella(conSimbolo("Obiettivo €", valutaBase()),"num");
-    var i2=document.createElement("input");
-    i2.type="text"; i2.inputMode="decimal"; i2.enterKeyHint="done"; i2.style.textAlign="right";
-    i2.value=importoPerCampo(Number(S.config.obiettivi[k])||0);
-    i2.addEventListener("change",function(){
-      S.config.obiettivi[k]=leggiImporto(this.value)||0; save(); renderImpostazioni();
-    });
-    c2.appendChild(i2); rigaT.appendChild(c2);
-
-    var az=cella("","azioni"), aw=el("div","row-tools");
-    var ren=el("button","btn sm","Rinomina");
-    ren.addEventListener("click",function(){ rinominaFondo(k); });
-    var can=el("button","btn sm danger","Elimina");
-    can.disabled = S.config.allocazioni.length<=1 || k===FONDO_BASE;
-    if(k===FONDO_BASE){
-      ren.disabled = true;
-      ren.title = can.title = tr("Qui finisce ciò che non ha un fondo: non si rinomina e non si elimina");
-    }
-    can.addEventListener("click",function(){ chiediEliminaFondo(k); });
-    aw.appendChild(ren); aw.appendChild(can); az.appendChild(aw); rigaT.appendChild(az);
-
-    body.appendChild(rigaT);
-  });
-  var f=$("setAllocFoot"); f.innerHTML="";
-  var ftr=el("tr");
-  ftr.appendChild(el("td",null,"Totale"));
-  ftr.appendChild(el("td","num", money(Object.keys(S.config.saldiIniziali).reduce(function(a,k){ return a+(Number(S.config.saldiIniziali[k])||0); },0))));
-  ftr.appendChild(el("td","num", money(totObj)));
-  ftr.appendChild(el("td"));
-  f.appendChild(ftr);
-
   renderAnni();
   renderRegole();
   fillSelect($("rFondo"), S.config.allocazioni, null, $("rFondo").value);
-  renderSetPortafogli();
+  renderPortafogli();
   chips("chipsArgU","argomentiUscite");
   chips("chipsArgE","argomentiEntrate");
   chips("chipsNec","necessita");
@@ -9895,21 +10433,143 @@ function usiFondo(nome){
   };
 }
 
-$("btnAddAlloc").addEventListener("click",function(){
+/* ── Un fondo nuovo, e la finestra «Modifica» (1.6.2) ──────────────────────
+   Una scheda sola, come i Portafogli: in cima il modulo «Nuovo fondo» (nome,
+   saldo iniziale, obiettivo), sotto l'elenco con, per ogni fondo, Modifica
+   (saldo iniziale e obiettivo, che prima erano campi sempre aperti in una
+   seconda scheda), Rinomina ed Elimina.
+   Il modulo e' aperto da solo quando non c'e' nessun fondo tuo (resta solo
+   «Non allocato») o ci sono soltanto quelli di esempio con cui parte l'app
+   (nessun movimento, nessun saldo iniziale, obiettivi di fabbrica, nessun
+   fondo segnato come completato): e' il momento in cui serve. Poi sta dietro
+   «+ Nuovo fondo». */
+var fondoNuovoAperto = null;   /* null: decide l'app; true o false: ha scelto chi la usa */
+
+function fondiSoloDiEsempio(){
+  var base=defaults().config, a=S.config.allocazioni;
+  if(a.length!==base.allocazioni.length) return false;
+  for(var i=0;i<a.length;i++){ if(a[i]!==base.allocazioni[i]) return false; }
+  if(tx().length) return false;
+  if(Object.keys(S.config.statoFondi||{}).length) return false;
+  return a.every(function(k){
+    return !(Number(S.config.saldiIniziali[k])||0) &&
+      (Number(S.config.obiettivi[k])||0)===(Number(base.obiettivi[k])||0);
+  });
+}
+
+function fondiTuoi(){
+  return S.config.allocazioni.filter(function(k){ return k!==FONDO_BASE; });
+}
+
+function fondoNuovoVisibile(){
+  if(fondoNuovoAperto!==null) return fondoNuovoAperto;
+  return !fondiTuoi().length || fondiSoloDiEsempio();
+}
+
+/* il modulo come nuovo: campi vuoti */
+function ripristinaModuloFondo(){
+  if(!$("newAlloc")) return;
+  $("newAlloc").value=""; $("newAllocSaldo").value=""; $("newAllocObiettivo").value="";
+}
+
+/* c'e' una bozza a meta' nei campi del modulo? */
+function moduloFondoHaTesto(){
+  return !!($("newAlloc").value.trim() || $("newAllocSaldo").value.trim() || $("newAllocObiettivo").value.trim());
+}
+
+function aggiornaModuloFondo(){
+  var box=$("fondoNuovoBox"), btn=$("btnNuovoFondo");
+  if(!box || !btn) return;
+  /* una bozza non si perde: se si sta scrivendo, il modulo resta aperto anche se nel frattempo
+     (per esempio salvando un'altra «Modifica») i fondi non sono piu' solo quelli di esempio */
+  if(fondoNuovoAperto===null && !fondoNuovoVisibile() && moduloFondoHaTesto()) fondoNuovoAperto=true;
+  var aperto=fondoNuovoVisibile();
+  box.style.display = aperto ? "" : "none";
+  btn.style.display = aperto ? "none" : "";
+  /* senza fondi tuoi non c'e' niente a cui tornare */
+  $("btnAnnullaAlloc").style.display = fondiTuoi().length ? "" : "none";
+}
+
+function aggiungiFondo(){
   var v=$("newAlloc").value.trim().replace(/\s+/g," ");
-  if(!v){ toast("Scrivi il nome del fondo"); return; }
+  if(!v){ toast("Scrivi il nome del fondo"); $("newAlloc").focus(); return; }
   if(S.config.allocazioni.some(function(a){ return a.toLowerCase()===v.toLowerCase(); })){
     toast("Esiste già un fondo con questo nome"); return;
   }
-  var dove=S.config.allocazioni.indexOf("Non allocato");
+  var gs=$("newAllocSaldo").value.trim(), go=$("newAllocObiettivo").value.trim();
+  var saldo = gs ? leggiImporto(gs) : 0, obiettivo = go ? leggiImporto(go) : 0;
+  if(!isFinite(saldo)){ toast("Il saldo iniziale non è un numero"); $("newAllocSaldo").focus(); return; }
+  if(!isFinite(obiettivo)){ toast("L'obiettivo non è un numero"); $("newAllocObiettivo").focus(); return; }
+  if(obiettivo<0){ toast("L'obiettivo non può essere negativo"); $("newAllocObiettivo").focus(); return; }
+  var dove=S.config.allocazioni.indexOf(FONDO_BASE);
   if(dove<0) dove=S.config.allocazioni.length;
   S.config.allocazioni.splice(dove,0,v);
-  S.config.saldiIniziali[v]=0;
-  S.config.obiettivi[v]=0;
-  $("newAlloc").value="";
-  save(); renderImpostazioni(); toast("Fondo «"+v+"» creato");
+  S.config.saldiIniziali[v]=Math.round(saldo*100)/100;
+  S.config.obiettivi[v]=Math.round(obiettivo*100)/100;
+  if(S.config.statoFondi) delete S.config.statoFondi[v];
+  fondoNuovoAperto=false;
+  ripristinaModuloFondo();
+  save(); ridisegnaQui(); toast("Fondo «"+v+"» creato");
+}
+
+$("btnAddAlloc").addEventListener("click",aggiungiFondo);
+/* Invio fa quello che dice la tastiera («avanti»): passa al campo dopo, e nell'ultimo aggiunge */
+var campoDopoFondo={ newAlloc:"newAllocSaldo", newAllocSaldo:"newAllocObiettivo" };
+["newAlloc","newAllocSaldo","newAllocObiettivo"].forEach(function(id){
+  $(id).addEventListener("keydown",function(e){
+    if(e.key!=="Enter") return;
+    if(campoDopoFondo[id]) $(campoDopoFondo[id]).focus(); else aggiungiFondo();
+  });
 });
-$("newAlloc").addEventListener("keydown",function(e){ if(e.key==="Enter") $("btnAddAlloc").click(); });
+$("btnNuovoFondo").addEventListener("click",function(){
+  ripristinaModuloFondo(); fondoNuovoAperto=true; aggiornaModuloFondo();
+  $("newAlloc").focus();
+});
+$("btnAnnullaAlloc").addEventListener("click",function(){
+  fondoNuovoAperto=false; ripristinaModuloFondo(); aggiornaModuloFondo();
+});
+
+/* La finestra «Modifica»: saldo iniziale e obiettivo di un fondo. */
+var fondoInModifica=null;
+function apriModificaFondo(k){
+  fondoInModifica=k;
+  $("fdTitolo").textContent="Modifica «"+k+"»";
+  $("fdIniz").value=importoPerCampo(Number(S.config.saldiIniziali[k])||0);
+  $("fdObiettivo").value=importoPerCampo(Number(S.config.obiettivi[k])||0);
+  $("fdBase").style.display = k===FONDO_BASE ? "" : "none";
+  $("fdMask").classList.add("on");
+  sospendiBanner(true);
+  ritraduci();
+}
+function chiudiModificaFondo(){
+  sospendiBanner(false); $("fdMask").classList.remove("on"); fondoInModifica=null; }
+
+function salvaModificaFondo(){
+  var k=fondoInModifica; if(!k) return;
+  /* il fondo puo' essere sparito mentre la finestra era aperta (eliminato da un'altra finestra,
+     o dati sostituiti): salvare ne ricreerebbe saldo e obiettivo come dati orfani */
+  if(S.config.allocazioni.indexOf(k)<0){ chiudiModificaFondo(); return; }
+  var gi=$("fdIniz").value.trim(), go=$("fdObiettivo").value.trim();
+  var iniz = gi ? leggiImporto(gi) : 0, obi = go ? leggiImporto(go) : 0;
+  if(!isFinite(iniz)){ toast("Il saldo iniziale non è un numero"); $("fdIniz").focus(); return; }
+  if(!isFinite(obi)){ toast("L'obiettivo non è un numero"); $("fdObiettivo").focus(); return; }
+  iniz=Math.round(iniz*100)/100; obi=Math.round(obi*100)/100;
+  var obiPrima=Number(S.config.obiettivi[k])||0;
+  /* un obiettivo negativo gia' presente (accettato fino alla 1.6.1) si puo' lasciare com'e': si rifiuta
+     solo di scriverne uno nuovo */
+  if(obi<0 && obi!==obiPrima){ toast("L'obiettivo non può essere negativo"); $("fdObiettivo").focus(); return; }
+  var cambiato = iniz!==(Number(S.config.saldiIniziali[k])||0) || obi!==obiPrima;
+  chiudiModificaFondo();
+  if(!cambiato) return;
+  S.config.saldiIniziali[k]=iniz; S.config.obiettivi[k]=obi;
+  save(); ridisegnaQui(); if(typeof vibra==="function") vibra();
+  toast("Fondo «"+k+"» aggiornato");
+}
+$("fdSalva").addEventListener("click",salvaModificaFondo);
+$("fdAnnulla").addEventListener("click",chiudiModificaFondo);
+$("fdMask").addEventListener("click",function(e){ if(e.target===this) chiudiModificaFondo(); });
+$("fdIniz").addEventListener("keydown",function(e){ if(e.key==="Enter") $("fdObiettivo").focus(); });
+$("fdObiettivo").addEventListener("keydown",function(e){ if(e.key==="Enter") salvaModificaFondo(); });
 
 function rinominaFondo(vecchio){
   if(vecchio===FONDO_BASE) return;
@@ -9930,10 +10590,13 @@ function rinominaFondo(vecchio){
   if(S.config.statoFondi[vecchio]!=null){
     S.config.statoFondi[nuovo]=S.config.statoFondi[vecchio];
     delete S.config.statoFondi[vecchio];
+  } else {
+    /* un nome gia' usato da un fondo eliminato non eredita il suo stato */
+    delete S.config.statoFondi[nuovo];
   }
   spostaRiferimentiFondo(vecchio, nuovo);
   (S.config.regole||[]).forEach(function(r){ if(r.fondo===vecchio) r.fondo=nuovo; });
-  save(); renderImpostazioni();
+  save(); ridisegnaQui();
   toast(trDin("Rinominato in «"+nuovo+"»")+
       (u.movimenti?" · "+trDin(accorda(u.movimenti,"movimento aggiornato","movimenti aggiornati")):""));
 }
@@ -9978,7 +10641,7 @@ $("allocConfirm").addEventListener("click",function(){
   S.config.allocazioni=S.config.allocazioni.filter(function(a){ return a!==nome; });
   delete S.config.saldiIniziali[nome];
   delete S.config.obiettivi[nome];
-  chiudiAlloc(); save(); renderImpostazioni();
+  chiudiAlloc(); save(); ridisegnaQui();
   toast(trDin("Fondo «"+nome+"» eliminato")+
       (u.movimenti?" · "+trDin(accorda(u.movimenti,"movimento spostato","movimenti spostati")):""));
 });
@@ -10009,141 +10672,6 @@ function renderAnni(){
     });
     c.appendChild(b); box.appendChild(c);
   });
-  ritraduci();
-}
-
-function renderSetPortafogli(){
-  var body=$("setPort"), foot=$("setPortFoot");
-  if(!body) return;
-  body.innerHTML=""; foot.innerHTML="";
-  var totIniz=0, totOggi=0;
-
-  portafogliOrdinati().forEach(function(p){
-    var iniz=Number(S.config.saldiInizialiPortafogli[p])||0;
-    var oggi=saldoPortafoglio(p);
-    var arch=portafoglioArchiviato(p);
-    totIniz+=iniz; totOggi+=oggi;
-    var rigaP=el("tr", arch?"port-archiviato":"");
-    var nm=cella("Portafoglio","testata");
-    nm.appendChild(document.createTextNode(p));
-    if(arch) nm.appendChild(el("span","tag","archiviato"));
-    rigaP.appendChild(nm);
-
-    var c1=cella(conSimbolo("Saldo iniziale €", valutaBase()),"num");
-    var i1=document.createElement("input");
-    i1.type="text"; i1.inputMode="decimal"; i1.enterKeyHint="done"; i1.style.textAlign="right";
-    i1.value=importoPerCampo(iniz);
-    i1.addEventListener("change",function(){
-      S.config.saldiInizialiPortafogli[p]=leggiImporto(this.value)||0;
-      save(); ridisegnaQui();
-    });
-    c1.appendChild(i1); rigaP.appendChild(c1);
-
-    var cv=cella("Valuta","num");
-    var sv=document.createElement("select");
-    Object.keys(VALUTE).forEach(function(v){
-      var o=document.createElement("option"); o.value=v; o.textContent=v;
-      if(v===valutaDiPortafoglio(p)) o.selected=true;
-      sv.appendChild(o);
-    });
-    sv.addEventListener("change",function(){
-      S.config.valutePortafogli[p]=this.value; save(); renderImpostazioni();
-    });
-    cv.appendChild(sv);
-    var lm=document.createElement("label");
-    lm.style.cssText="display:flex;gap:6px;align-items:center;margin-top:6px;font-size:12px;color:var(--muted);cursor:pointer";
-    var ck=document.createElement("input"); ck.type="checkbox";
-    ck.checked=portafoglioMultivaluta(p);
-    ck.addEventListener("change",function(){
-      S.config.portafogliMultivaluta = S.config.portafogliMultivaluta || [];
-      if(this.checked){ if(!portafoglioMultivaluta(p)) S.config.portafogliMultivaluta.push(p); }
-      else S.config.portafogliMultivaluta = S.config.portafogliMultivaluta.filter(function(x){ return x!==p; });
-      save(); renderImpostazioni();
-    });
-    lm.appendChild(ck); lm.appendChild(document.createTextNode("più valute"));
-    cv.appendChild(lm);
-    rigaP.appendChild(cv);
-
-    /* anche qui le valute separate vengono prima del valore convertito */
-    var co=cella("Saldo oggi","num");
-    if(portafoglioMultivaluta(p)){
-      var perImp=saldiPerValuta(p);
-      var kImp=Object.keys(perImp).filter(function(k){ return Math.abs(perImp[k])>0.005; }).sort();
-      if(!kImp.length) kImp=[valutaBase()];
-      kImp.forEach(function(k,i){
-        var r=el("div", perImp[k]<0?"neg":perImp[k]>0?"pos":"dim", moneyIn(perImp[k],k));
-        if(i) r.style.marginTop="2px";
-        co.appendChild(r);
-      });
-    } else {
-      co.className="num "+(oggi<0?"neg":oggi>0?"pos":"dim");
-      co.textContent=money(oggi);
-    }
-    rigaP.appendChild(co);
-
-    var az=cella("","azioni"), w=el("div","row-tools");
-    var n=tx().filter(function(t){
-      return t.portafoglio===p || t.portafoglioDest===p; }).length;
-
-    if(arch){
-      var br=el("button","btn sm","Riattiva");
-      br.title="Torna disponibile quando registri un movimento";
-      br.addEventListener("click",function(){ archiviaPortafoglio(p,false); });
-      w.appendChild(br);
-    } else {
-      var ba=el("button","btn sm","Archivia");
-      var vuoto=Math.abs(oggi)<0.005;
-      /* Prima era disattivato quando il portafoglio conteneva ancora
-         qualcosa. Ma un pulsante spento il foglio di stile non lo
-         distingue abbastanza: sembrava premibile e non faceva niente.
-         E archiviare non distrugge nulla \u2014 il saldo continua a
-         contare nei totali e si riattiva quando si vuole \u2014 quindi
-         tanto vale permetterlo, chiedendo conferma. */
-      ba.title = vuoto
-        ? "Lo toglie dai menu: resta nello storico ma non te lo propone più"
-        : "Contiene ancora "+money(oggi)+": puoi archiviarlo lo stesso";
-      ba.addEventListener("click",function(){
-        if(!vuoto && !confirm(
-          "\u00ab"+p+"\u00bb "+tr("contiene ancora")+" "+money(oggi)+".\n\n"+
-          tr("Archiviandolo sparisce dai menu, ma il saldo continua a contare nei totali e lo storico resta intatto. Puoi riattivarlo quando vuoi.")+
-          "\n\n"+tr("Archiviare comunque?"))) return;
-        archiviaPortafoglio(p,true);
-      });
-      w.appendChild(ba);
-    }
-
-    var brn=el("button","btn sm","Rinomina");
-    brn.title="Cambia il nome ovunque: movimenti, correzioni e regole compresi";
-    brn.addEventListener("click",function(){ rinominaPortafoglio(p); });
-    w.appendChild(brn);
-
-    var b=el("button","btn sm danger","Elimina");
-    b.addEventListener("click",function(){
-      if(n && !confirm("«"+p+"» è usato da "+n+" moviment"+(n===1?"o":"i")+
-                       ".\n\nEliminarlo comunque? I movimenti restano invariati, ma il portafoglio sparisce dai prospetti.\n\nSe vuoi solo toglierlo dai menu, usa Archivia.")) return;
-      S.config.portafogli=S.config.portafogli.filter(function(x){ return x!==p; });
-      S.config.portafogliArchiviati=(S.config.portafogliArchiviati||[]).filter(function(x){ return x!==p; });
-      delete S.config.saldiInizialiPortafogli[p];
-      S.rettifiche=rettifiche().filter(function(r){ return r.portafoglio!==p; });
-      save(); ridisegnaQui(); toast("Portafoglio rimosso");
-    });
-    w.appendChild(b); az.appendChild(w); rigaP.appendChild(az);
-    body.appendChild(rigaP);
-  });
-
-  if(!S.config.portafogli.length){
-    var tr0=el("tr"), td0=el("td"); td0.colSpan=4;
-    td0.innerHTML='<div class="empty"><strong>Nessun portafoglio</strong>Aggiungine uno qui sotto.</div>';
-    tr0.appendChild(td0); body.appendChild(tr0); return;
-  }
-
-  var ftr=el("tr");
-  ftr.appendChild(cella("","","Totale"));
-  ftr.appendChild(cella("Saldo iniziale","num",money(totIniz)));
-  ftr.appendChild(cella("",""));
-  ftr.appendChild(cella("Saldo oggi","num",money(Math.round(totOggi*100)/100)));
-  ftr.appendChild(cella("",""));
-  foot.appendChild(ftr);
   ritraduci();
 }
 
@@ -11835,7 +12363,7 @@ function normalize(r){
 /* ── Reset & demo ── */
 $("btnWipe").addEventListener("click",function(){
   if(!confirm("Cancella tutti i movimenti, le rilevazioni e le impostazioni. L'operazione non è reversibile: hai un backup?")) return;
-  S=defaults(); save(); renderAll(); toast("Tutti i dati cancellati");
+  S=defaults(); portNuovoAperto=null; fondoNuovoAperto=null; save(); renderAll(); toast("Tutti i dati cancellati");
 });
 $("btnDemo").addEventListener("click",function(){
   if(tx().length && !confirm("Aggiunge alcune voci di esempio ai dati attuali. Procedo?")) return;
@@ -11855,7 +12383,7 @@ $("btnDemo").addEventListener("click",function(){
 
 /* ── Tasti ── */
 document.addEventListener("keydown",function(e){
-  if(e.key==="Escape"){ closeTx(); closeSnap(); chiudiAlloc(); chiudiRettifica(); chiudiMenu(); chiudiModificaRicorrenza(); chiudiDataGiroconti(); if(visPassi) chiudiVisita(false); }
+  if(e.key==="Escape"){ closeTx(); closeSnap(); chiudiAlloc(); chiudiModificaFondo(); chiudiRettifica(); chiudiMenu(); chiudiModificaRicorrenza(); chiudiDataGiroconti(); if(visPassi) chiudiVisita(false); }
   if(e.key==="Enter" && $("txMask").classList.contains("on") && e.target.tagName!=="TEXTAREA"){ $("txSave").click(); }
   if(e.key==="Enter" && $("invMask").classList.contains("on")){ $("invSave").click(); }
 });
@@ -12112,6 +12640,9 @@ if($("pgConferma")) $("pgConferma").addEventListener("click", registraPareggiVia
 if($("pgImporto")) $("pgImporto").addEventListener("input", pgAggiornaNotaCambio);
 if($("pgValuta")) $("pgValuta").addEventListener("change", pgAggiornaNotaCambio);
 if($("pgMask")) $("pgMask").addEventListener("click",function(e){ if(e.target===this) chiudiPareggiViaggio(); });
+if($("plAnnulla")) $("plAnnulla").addEventListener("click", chiudiElencoPareggi);
+if($("plConferma")) $("plConferma").addEventListener("click", confermaElencoPareggi);
+if($("plMask")) $("plMask").addEventListener("click",function(e){ if(e.target===this) chiudiElencoPareggi(); });
 
 
 /* ── Esportazioni in PDF ──────────────────────────────────────*/
