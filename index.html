@@ -123,6 +123,9 @@ main > *{flex:0 0 auto}
 /* accanto a «＋ Aggiungi», «Installa app» (solo nella PWA aperta nel
    browser) non e' piu' l'azione principale: pulsante normale, stretto */
 .topbar .btn.installa{flex:0 0 auto;white-space:nowrap}
+/* «Scarica da Google Play» (anche questo solo nella PWA aperta nel browser)
+   e' un collegamento: niente sottolineatura, testo al centro */
+.topbar .btn.scarica-play{flex:0 0 auto;white-space:nowrap;text-decoration:none;text-align:center}
 /* e «Aggiorna» (una versione nuova su Play) non si allarga a spese del titolo */
 .topbar #btnAggiorna{flex:0 0 auto;white-space:nowrap}
 .view{padding:22px 26px 60px;display:none;flex:0 0 auto;min-height:0}
@@ -1006,10 +1009,10 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
   .riep-cat th,.riep-cat td{padding-left:6px;padding-right:6px}
   /* l'anno e il mese del titolo stanno nel selettore e nella striscia */
   .topbar .title .tit-extra{display:none}
-  /* «Installa app» (la PWA nel browser) e «Aggiorna» (una versione
-     nuova su Play) su una riga loro: sulla riga degli altri il
-     titolo si ridurrebbe a pochi pixel */
-  .topbar .btn.installa,.topbar #btnAggiorna{flex:1 0 100%}
+  /* «Installa app» (la PWA nel browser), «Scarica da Google Play» e
+     «Aggiorna» (una versione nuova su Play) su una riga loro: sulla
+     riga degli altri il titolo si ridurrebbe a pochi pixel */
+  .topbar .btn.installa,.topbar .btn.scarica-play,.topbar #btnAggiorna{flex:1 0 100%}
   /* Stesso discorso delle statistiche dell'anno: tre cifre corte che
      a una colonna occupavano tre schermate. Il terzo riquadro porta
      la frase piu' lunga («i due prospetti non coincidono») e si
@@ -1121,6 +1124,7 @@ th:last-of-type .col-pop,th:nth-last-child(2) .col-pop{left:auto;right:0}
       </div>
       <button class="btn primary aggiungi" id="btnNew" aria-label="Aggiungi voce">＋ Aggiungi</button>
       <button class="btn installa" id="btnInstalla">Installa app</button>
+      <a class="btn scarica-play" id="btnPlay" href="https://play.google.com/store/apps/details?id=io.github.cristian2005.contami" target="_blank" rel="noopener" style="display:none">Scarica da Google Play</a>
       <button class="btn primary" id="btnAggiorna" style="display:none">Aggiorna</button>
       <input type="file" id="fileIn" accept=".json,application/json" hidden>
     </div>
@@ -6704,6 +6708,7 @@ var TESTI_EN = {
   "Saldo €": "Balance €",
   "Salva rilevazione": "Save reading",
   "Salva voce": "Save entry",
+  "Scarica da Google Play": "Get it on Google Play",
   "Scarica i tassi aggiornati": "Download latest rates",
   "Spesa superflua": "Unnecessary expense",
   "Sposta denaro da un fondo all'altro senza spenderlo": "Moves money between funds without spending it",
@@ -11697,11 +11702,25 @@ function aggiornaPulsanteInstalla(){
   b.style.display = appGiaInstallata() ? "none" : "";
 }
 
+/* «Scarica da Google Play» è per chi apre l'app dal web. Non serve dove
+   l'app c'è già (stessi controlli di «Installa app») e non ha senso dove
+   Google Play non esiste, cioè su iPhone e iPad. Da iPadOS 13 un iPad si
+   presenta come un Mac: lo si riconosce dallo schermo a tocco. */
+function sistemaApple(){
+  var ua=String(navigator.userAgent||"");
+  if(/iPad|iPhone|iPod/.test(ua)) return true;
+  return navigator.platform==="MacIntel" && navigator.maxTouchPoints>1;
+}
+function aggiornaPulsantePlay(){
+  var b=$("btnPlay"); if(!b) return;
+  b.style.display = (appGiaInstallata() || sistemaApple()) ? "none" : "";
+}
+
 /* e se l'installazione avviene mentre l'app è aperta, sparisce subito */
 if(window.matchMedia){
   try{
     var mqInst=window.matchMedia("(display-mode: standalone)");
-    var reagisciInst=aggiornaPulsanteInstalla;
+    var reagisciInst=function(){ aggiornaPulsanteInstalla(); aggiornaPulsantePlay(); };
     if(mqInst.addEventListener) mqInst.addEventListener("change",reagisciInst);
     else if(mqInst.addListener) mqInst.addListener(reagisciInst);
   }catch(e){}
@@ -12458,6 +12477,7 @@ window.addEventListener("beforeinstallprompt",function(e){
 window.addEventListener("appinstalled",function(){
   promptInstalla=null;
   var b=$("btnInstalla"); if(b) b.style.display="none";
+  var g=$("btnPlay"); if(g) g.style.display="none";
   toast("App installata: la trovi tra le tue applicazioni");
 });
 
@@ -12726,6 +12746,7 @@ if($("ecConferma")) $("ecConferma").addEventListener("click",function(){
 function avviaInterfaccia(){
   if(typeof avviaSentinellaLingua==="function") avviaSentinellaLingua();
   aggiornaPulsanteInstalla();
+  aggiornaPulsantePlay();
   try{
     renderAll();
   }catch(e){
